@@ -1,0 +1,427 @@
+openapi: 3.0.0
+info:
+  title: WASAPhoto
+  description: |
+    API for WASAPhoto social Project.
+    Each user will be presented with a stream of photos (images) in reverse chronological order, with
+    information about when each photo was uploaded (date and time) and how many likes and comments
+    it has. The stream is composed by photos from “following” (other users that the user follows). Users
+    can place (and later remove) a “like” to photos from other users. Also, users can add comments to any
+    image (even those uploaded by themself). Only authors can remove their comments.
+    Users can ban other users. If user Alice bans user Eve, Eve won’t be able to see any information about
+    Alice. Alice can decide to remove the ban at any moment.
+    Users will have their profiles. The personal profile page for the user shows: the user’s photos (in reverse
+    chronological order), how many photos have been uploaded, and the user’s followers and following.
+    Users can change their usernames, upload photos, remove photos, and follow/unfollow other users.
+    Removal of an image will also remove likes and comments.
+    A user can search other user profiles via username.
+    A user can log in just by specifying the username.
+  version: 1.0.0
+paths:
+
+############## Simplified login ##############
+
+  /session:
+    post:
+      tags: ["login"]
+      summary: Logs in the user
+      description: |
+        If the user does not exist, it will be created,
+        and an identifier is returned.
+        If the user exists, the user identifier is returned.
+      operationId: doLogin
+      requestBody:
+        description: User details
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Maria
+                  pattern: '^.{3,16}$'
+                  minLength: 3
+                  maxLength: 16
+        required: true
+      responses:
+        '200':
+          description: log-in action successful
+          content:
+           application/json:
+              schema:
+                type: object
+                properties:
+                  identifier:
+                    # change here if you decide to use an integer
+                    # or any other type of identifier
+                    type: string
+                    example: "abcdef012345"
+                  isNewUser:
+                    type: boolean
+                    example: false
+        '201':
+          description: User created and log-in action successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  identifier:
+                    # change here if you decide to use an integer
+                    # or any other type of identifier
+                    type: string
+                    example: "abcdef012345"
+                  isNewUser:
+                    type: boolean
+                    example: true
+                    
+############## User action ##############
+
+#-------Profile-------#
+
+  /users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/userId'
+    put:
+      tags: ["user"]
+      summary: Set a new Username
+      operationId: SetMyUserName
+      requestBody:
+        description: new username
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Maria
+                  pattern: 'ˆ.*?$'
+                  minLength: 3
+                  maxLength: 16
+        required: true
+      responses:
+        "201":
+          description: username updated
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+    get:
+      tags: ["user"]
+      summary: Get user profile
+      operationId: getUserProfile
+      responses:
+        "200":
+          description: successfully return user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+              examples:
+                example1:
+                  value:
+                    id: "123"
+                    name: "Maria"
+                    followerCount: 10
+                    followingCount: 5
+                    photosCount: 20
+                    bannedUser: ["456", "789"]
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+
+
+#-------stream of Photos-------#
+
+  /users/{userId}/stream:
+    parameters:
+      - $ref: '#/components/parameters/userId'
+    get:
+      tags: ['stream']
+      summary: Get my photos stream
+      description: go to my personal stream of photos
+      operationId: getMyStream
+      responses:
+        "200":
+          description: Successfully show my photo stream
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Photo'
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+
+#-------Photos-------#
+
+  /users/{userId}/photos:
+    parameters:
+      - $ref: '#/components/parameters/userId'
+    post:
+      tags: ["photos"]
+      summary: Upload a new photo
+      operationId: uploadPhoto
+      requestBody:
+        required: true
+        description: new photo
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: photo uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Photo'
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      tags: ["photos"]
+      summary: Delete a photo
+      description: Deletes a photo belonging to the authenticated user.
+      operationId: deletePhoto
+      parameters:
+        - in: query
+          name: photoId
+          required: true
+          description: ID of the photo to delete
+          schema:
+            type: string
+      responses:
+        '204':
+          description: |
+            Photo and his likes and comments deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Photo not found
+
+#-------Photo likes-------#
+
+  /users/{userId}/photos/{photosId}/likes:
+    parameters:
+      - $ref: '#/components/parameters/userId'
+      - $ref: '#/components/parameters/photosId'
+    post:
+      tags: ["likes"]
+      summary: allow to like photos
+      operationId: likePhoto
+      responses:
+        "201":
+          description: photo liked successfully
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+        "404":
+          description: photo not found
+    delete:
+      tags: ["likes"]
+      summary: allow to unlike photos
+      operationId: unlike Photo
+      responses:
+        "204":
+          description: photo unliked successfully
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+        "403":
+          description: User is not the author of the like
+        "404":
+          description: photo not found
+          
+#-------Photo comments-------#
+
+  /users/{userId}/photos/{photosId}/comments:
+    parameters:
+      - $ref: '#/components/parameters/userId'
+      - $ref: '#/components/parameters/photosId'
+    post:
+      tags: ["comments"]
+      summary: allow to comment photos
+      operationId: commentPhoto
+      responses:
+        "201":
+          description: photo commented successfully
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+        "404":
+          description: photo not found
+    delete:
+      tags: ["comments"]
+      summary: allow to delete comments on photos
+      operationId: uncommentPhoto
+      responses:
+        "204":
+          description: Comment on photo deleted successfully
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+        "403":
+          description: User is not the author of the comment
+        "404":
+          description: Comment not found
+
+#-------follows-------#
+
+  /users/{userId}/follows/{followedId}:
+    parameters:
+      - $ref: '#/components/parameters/followedId'
+      - $ref: '#/components/parameters/userId'
+    post:
+      tags: ["follow"]
+      summary: Allow to follow another account
+      operationId: followUser
+      responses:
+        "201":
+          description: user followed successfully
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      tags: ["follow"]
+      summary: Allow to unfollow another account
+      operationId: unfollowUser
+      responses:
+        "201":
+          description: user unfollowed successfully
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+          
+#-------ban-------#
+
+  /users/{userId}/ban/{bannedId}:
+    parameters:
+      - $ref: '#/components/parameters/userId'
+      - $ref: '#/components/parameters/bannedId'
+    post:
+      tags: ["ban"]
+      summary: Allow to ban another account
+      operationId: banUser
+      responses:
+        "201":
+          description: user banned successfully
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      tags: ["ban"]
+      summary: Allow to unban another account
+      operationId: unbanUser
+      responses:
+        "201":
+          description: user unbanned successfully
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+
+#-------search-------#
+
+  /users/search/{username}:
+    parameters:
+      - name: username
+        in: path
+        required: true
+        description: Username of the user to search
+        schema:
+          type: string
+    get:
+      tags: ["search"]
+      summary: Search user profile by username
+      operationId: searchUser
+      responses:
+        "200":
+          description: Successfully return user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+              examples:
+                example1:
+                  value:
+                    id: "123"
+                    name: "Maria"
+                    followerCount: 10
+                    followingCount: 5
+                    photosCount: 20
+                    bannedUser: ["456", "789"]
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+        "404":
+          description: User not found
+        "403":
+          description: Forbidden, you are banned from viewing this profile
+
+components:
+  securitySchemes:
+    bearerAuth:            # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: string
+      description: User ID used as bearer token
+  responses:
+    UnauthorizedError:
+      description: Access identifier is missing or invalid
+  parameters:
+    userId:
+      name: userId
+      in: path
+      required: true
+      description: ID of the user
+      schema:
+        type: string    
+    bannedId:
+      name: bannedId
+      in: path
+      required: true
+      description: ID of the user to ban/unban
+      schema:
+        type: string
+    followedId:
+      name: followedId
+      in: path
+      required: true
+      description: ID of the user to follow/unfollow
+      schema:
+        type: string
+    photosId:
+      name: photosId
+      in: path
+      description: ID of the photo
+      required: true
+      schema:
+        type: string
+  schemas:
+    Photo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the photo
+        url:
+          type: string
+          format: uri
+          description: The URL where the photo is stored
+        timestamp:
+          type: string
+          format: date-time
+          description: The date and time when the photo was uploaded
+    UserProfile:
+      type: object
+      properties:
+        followerCount:
+          type: integer
+        followingCount:
+          type: integer
+        photosCount:
+          type: integer
+        bannedUser:
+          type: array
+          items:
+            type: string
+security:
+  - bearerAuth: []  
+
+    
+    
+    
+    
