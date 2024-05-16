@@ -35,14 +35,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: Maria
-                  pattern: '^.{3,16}$'
-                  minLength: 3
-                  maxLength: 16
+              $ref: '#/components/schemas/UserDetails'
         required: true
       responses:
         '200':
@@ -50,32 +43,13 @@ paths:
           content:
            application/json:
               schema:
-                type: object
-                properties:
-                  identifier:
-                    # change here if you decide to use an integer
-                    # or any other type of identifier
-                    type: string
-                    example: "abcdef012345"
-                  isNewUser:
-                    type: boolean
-                    example: false
+                $ref: '#/components/schemas/Identifier'
         '201':
           description: User created and log-in action successful
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  identifier:
-                    # change here if you decide to use an integer
-                    # or any other type of identifier
-                    type: string
-                    example: "abcdef012345"
-                  isNewUser:
-                    type: boolean
-                    example: true
-                    
+                $ref: '#/components/schemas/Identifier'                    
 ############## User action ##############
 
 #-------Profile-------#
@@ -391,6 +365,29 @@ components:
       schema:
         type: string
   schemas:
+    UserDetails:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Maria
+          pattern: 'ˆ.*?$'
+          minLength: 3
+          maxLength: 16
+          description: The name of the user
+    Identifier:
+      type: object
+      properties:
+        identifier:
+          # change here if you decide to use an integer
+          # or any other type of identifier
+          type: string
+          example: "abcdef012345"
+          description: The unique identifier of the user
+        isNewUser:
+          type: boolean
+          example: false
+          description: Indicates if the user is new
     Photo:
       type: object
       properties:
@@ -399,7 +396,7 @@ components:
           description: The unique identifier of the photo
         url:
           type: string
-          format: uri
+          format: url
           description: The URL where the photo is stored
         timestamp:
           type: string
@@ -419,9 +416,4 @@ components:
           items:
             type: string
 security:
-  - bearerAuth: []  
-
-    
-    
-    
-    
+  - bearerAuth: []
