@@ -283,7 +283,7 @@ paths:
 
 #-------search-------#
 
-  /users/search/{username}:
+  /search/{username}:
     parameters:
       - name: username
         in: path
