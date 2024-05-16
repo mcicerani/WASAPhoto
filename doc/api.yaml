@@ -66,14 +66,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: Maria
-                  pattern: 'ˆ.*?$'
-                  minLength: 3
-                  maxLength: 16
+              $ref: '#/components/schemas/UserDetails'
         required: true
       responses:
         "201":
@@ -371,7 +364,7 @@ components:
         name:
           type: string
           example: Maria
-          pattern: 'ˆ.*?$'
+          pattern: '^.*?$'
           minLength: 3
           maxLength: 16
           description: The name of the user
