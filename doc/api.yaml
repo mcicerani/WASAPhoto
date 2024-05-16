@@ -400,13 +400,18 @@ components:
       properties:
         followerCount:
           type: integer
+          description: The number of followers
         followingCount:
           type: integer
+          description: The number of users followed
         photosCount:
           type: integer
+          description: The number of photos uploaded
         bannedUser:
           type: array
           items:
             type: string
+            description: banned user ID
+          description: The list of banned users
 security:
   - bearerAuth: []
