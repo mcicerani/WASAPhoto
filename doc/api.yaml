@@ -17,6 +17,25 @@ info:
     A user can search other user profiles via username.
     A user can log in just by specifying the username.
   version: 1.0.0
+tags:
+  - name: login
+    description: Operation related to login
+  - name: user
+    description: Operation related to the user
+  - name: stream
+    description: Operation related to the stream of photos of the user
+  - name: photos
+    description: Operation related to the photos of the user
+  - name: likes
+    description: Operation related to the likes of the user
+  - name: comments
+    description: Operation related to the comments of the user
+  - name: follows
+    description: Operation related to the follows of the user
+  - name: bans
+    description: Operation related to the bans of the user
+  - name: search
+    description: Operation related to search other users
 paths:
 
 ############## Simplified login ##############
@@ -44,12 +63,23 @@ paths:
            application/json:
               schema:
                 $ref: '#/components/schemas/Identifier'
+              examples:
+                example1:
+                  value:
+                    identifier: "abc123"
+                    isNewUser: false
         '201':
           description: User created and log-in action successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Identifier'                    
+                $ref: '#/components/schemas/Identifier'
+              examples:
+                example1:
+                  value:
+                    identifier: "abc123"
+                    isNewUser: true
+                    
 ############## User action ##############
 
 #-------Profile-------#
@@ -59,6 +89,7 @@ paths:
       - $ref: '#/components/parameters/userId'
     put:
       tags: ["user"]
+      description: allows to set a new username
       summary: Set a new Username
       operationId: SetMyUserName
       requestBody:
@@ -71,10 +102,19 @@ paths:
       responses:
         "201":
           description: username updated
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetails'
+              examples:
+                example1:
+                  value:
+                   username: "Alessandro"
         "401":
           $ref: '#/components/responses/UnauthorizedError'
     get:
       tags: ["user"]
+      description: allows to get the profile of the logged user
       summary: Get user profile
       operationId: getUserProfile
       responses:
@@ -116,6 +156,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Photo'
+                minItems: 1
+                maxItems: 100
+                description: |
+                  Shows the photos of the account followed by the user logged in reverse cronological order
         "401":
           $ref: '#/components/responses/UnauthorizedError'
 
@@ -126,6 +170,7 @@ paths:
       - $ref: '#/components/parameters/userId'
     post:
       tags: ["photos"]
+      description: allows to upload a new photo and return the id of the photos
       summary: Upload a new photo
       operationId: uploadPhoto
       requestBody:
@@ -135,6 +180,7 @@ paths:
           multipart/form-data:
             schema:
               type: object
+              description: photo to upload
               properties:
                 photo:
                   type: string
@@ -146,6 +192,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Photo'
+              examples:
+                example1:
+                  value:
+                    id: "abc123"
+                    url: "https://api.example.com/v1"
+                    timestamp: "2024-05-16T17:24:49.408Z"
         "401":
           $ref: '#/components/responses/UnauthorizedError'
     delete:
@@ -160,14 +212,13 @@ paths:
           description: ID of the photo to delete
           schema:
             type: string
+            pattern: '^.*?$'
       responses:
         '204':
           description: |
             Photo and his likes and comments deleted successfully
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          description: Photo not found
 
 #-------Photo likes-------#
 
@@ -177,28 +228,24 @@ paths:
       - $ref: '#/components/parameters/photosId'
     post:
       tags: ["likes"]
-      summary: allow to like photos
+      description: allows to like photos
+      summary: like photos
       operationId: likePhoto
       responses:
         "201":
           description: photo liked successfully
         "401":
           $ref: '#/components/responses/UnauthorizedError'
-        "404":
-          description: photo not found
     delete:
       tags: ["likes"]
-      summary: allow to unlike photos
-      operationId: unlike Photo
+      description: allows to unlike Photo
+      summary: unlike photos
+      operationId: unlikePhoto
       responses:
         "204":
           description: photo unliked successfully
         "401":
           $ref: '#/components/responses/UnauthorizedError'
-        "403":
-          description: User is not the author of the like
-        "404":
-          description: photo not found
           
 #-------Photo comments-------#
 
@@ -208,28 +255,24 @@ paths:
       - $ref: '#/components/parameters/photosId'
     post:
       tags: ["comments"]
-      summary: allow to comment photos
+      description: allows to comment photos
+      summary: comment photos
       operationId: commentPhoto
       responses:
         "201":
           description: photo commented successfully
         "401":
           $ref: '#/components/responses/UnauthorizedError'
-        "404":
-          description: photo not found
     delete:
       tags: ["comments"]
-      summary: allow to delete comments on photos
+      description: allows to delete comment on photos
+      summary: comments on photos
       operationId: uncommentPhoto
       responses:
         "204":
           description: Comment on photo deleted successfully
         "401":
           $ref: '#/components/responses/UnauthorizedError'
-        "403":
-          description: User is not the author of the comment
-        "404":
-          description: Comment not found
 
 #-------follows-------#
 
@@ -238,8 +281,9 @@ paths:
       - $ref: '#/components/parameters/followedId'
       - $ref: '#/components/parameters/userId'
     post:
-      tags: ["follow"]
-      summary: Allow to follow another account
+      tags: ["follows"]
+      description: allows to follows other accounts
+      summary: follow another account
       operationId: followUser
       responses:
         "201":
@@ -247,8 +291,9 @@ paths:
         "401":
           $ref: '#/components/responses/UnauthorizedError'
     delete:
-      tags: ["follow"]
-      summary: Allow to unfollow another account
+      tags: ["follows"]
+      description: allows to unfollows other accounts
+      summary: another account
       operationId: unfollowUser
       responses:
         "201":
@@ -263,8 +308,9 @@ paths:
       - $ref: '#/components/parameters/userId'
       - $ref: '#/components/parameters/bannedId'
     post:
-      tags: ["ban"]
-      summary: Allow to ban another account
+      tags: ["bans"]
+      description: allows to ban other accounts
+      summary: ban another account
       operationId: banUser
       responses:
         "201":
@@ -272,8 +318,9 @@ paths:
         "401":
           $ref: '#/components/responses/UnauthorizedError'
     delete:
-      tags: ["ban"]
-      summary: Allow to unban another account
+      tags: ["bans"]
+      description: allows to ban other accounts
+      summary: unban another account
       operationId: unbanUser
       responses:
         "201":
@@ -285,12 +332,7 @@ paths:
 
   /search/{username}:
     parameters:
-      - name: username
-        in: path
-        required: true
-        description: Username of the user to search
-        schema:
-          type: string
+      - $ref: '#/components/parameters/username'
     get:
       tags: ["search"]
       summary: Search user profile by username
@@ -329,6 +371,13 @@ components:
     UnauthorizedError:
       description: Access identifier is missing or invalid
   parameters:
+    username:
+      name: username
+      in: path
+      required: true
+      description: Username of the user to search
+      schema:
+        type: string
     userId:
       name: userId
       in: path
@@ -361,7 +410,7 @@ components:
     UserDetails:
       type: object
       properties:
-        name:
+        username:
           type: string
           example: Maria
           pattern: '^.*?$'
