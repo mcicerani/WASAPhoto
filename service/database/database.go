@@ -38,8 +38,13 @@ import (
 
 // AppDatabase is the high level interface for the DB
 type AppDatabase interface {
-	GetUser() (string, error)
+
+	//User
 	SetUser(name string) error
+	UpdateUsername(name string, newname string) error
+	GetUserByUsername(name string) (UserProfile, error)
+	GetUserById(id string) (UserProfile, error)
+	DeleteUser(name string, id string) error
 
 	Ping() error
 }
@@ -55,15 +60,64 @@ func New(db *sql.DB) (AppDatabase, error) {
 		return nil, errors.New("database is required when building a AppDatabase")
 	}
 
-	// Check if table exists. If not, the database is empty, and we need to create the structure
-	var tableName string
-	err := db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='example_table';`).Scan(&tableName)
-	if errors.Is(err, sql.ErrNoRows) {
-		sqlStmt := `CREATE TABLE example_table (id INTEGER NOT NULL PRIMARY KEY, name TEXT);`
-		_, err = db.Exec(sqlStmt)
-		if err != nil {
-			return nil, fmt.Errorf("error creating database structure: %w", err)
-		}
+	// Check if the database is reachable
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("database ping failed: %w", err)
+	}
+
+	// Create the tables if they don't exist
+	//User table
+	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS user_details (
+		username TEXT
+	)`)
+	if err != nil {
+		return nil, fmt.Errorf("creating table: %w", err)
+	}
+
+	//Identifier table
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS identifier (
+		user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+		is_new_user BOOLEAN
+	)`)
+	if err != nil {
+		return nil, fmt.Errorf("creating table: %w", err)
+	}
+	
+	//UserProfile table
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS user_profile (
+		user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT,
+		follower_count INTEGER,
+		followers TEXT,
+		following_count INTEGER,
+		follows TEXT,
+		photos_count INTEGER,
+		banned_user TEXT
+	)`)
+	if err != nil {
+		return nil, fmt.Errorf("creating table: %w", err)
+	}
+
+	//Photo table
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS photo (
+		photos_id INTEGER PRIMARY KEY AUTOINCREMENT,
+		url TEXT,
+		timestamp TEXT,
+		likes_number INTEGER
+	)`)
+	if err != nil {
+		return nil, fmt.Errorf("creating table: %w", err)
+	}
+
+	//Comment table
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS comment (
+		comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER,
+		photos_id INTEGER,
+		text_comment TEXT
+	)`)
+	if err != nil {
+		return nil, fmt.Errorf("creating table: %w", err)
 	}
 
 	return &appdbimpl{

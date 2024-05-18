@@ -5,6 +5,7 @@ type UserDetails struct {
 }
 
 type Identifier struct {
+	Username  string `json:"username"`
 	UserId    string `json:"user_id"`
 	IsNewUser bool   `json:"is_new_user"`
 }
