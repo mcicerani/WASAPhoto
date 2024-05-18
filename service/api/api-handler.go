@@ -13,5 +13,34 @@ func (rt *_router) Handler() http.Handler {
 	// Special routes
 	rt.router.GET("/liveness", rt.liveness)
 
+	// Login routes
+	rt.router.POST("/session", rt.wrap(rt.doLogin))
+
+	// User routes
+	rt.router.GET("/users/", rt.wrap(rt.searchUser))
+	rt.router.PUT("/users/:userId", rt.wrap(rt.setMyUsername))
+	rt.router.GET("/users/:userId", rt.wrap(rt.getUserProfile))
+	rt.router.GET("/users/:userId/stream", rt.wrap(rt.getMyStream))
+
+	// Photos routes
+	rt.router.POST("/users/:userId/photos", rt.wrap(rt.uploadPhoto))
+	rt.router.DELETE("/users/:userId/photos", rt.wrap(rt.deletePhoto))
+
+	// Likes routes
+	rt.router.POST("/users/:userId/photos/:photosId/likes", rt.wrap(rt.likePhoto))
+	rt.router.DELETE("/users/:userId/photos/:photosId/likes", rt.wrap(rt.unlikePhoto))
+
+	// Comments routes
+	rt.router.POST("/users/:userId/photos/:photosId/comments", rt.wrap(rt.commentPhoto))
+	rt.router.DELETE("/users/:userId/photos/:photosId/comments", rt.wrap(rt.uncommentPhoto))
+
+	// Follows routes
+	rt.router.POST("/users/:userId/follows/:followedId", rt.wrap(rt.followUser))
+	rt.router.DELETE("/users/:userId/follows/:followedId", rt.wrap(rt.unfollowUser))
+
+	// Ban routes
+	rt.router.POST("/users/:userId/bans/:bannedId", rt.wrap(rt.banUser))
+	rt.router.DELETE("/users/:userId/bans/:bannedId", rt.wrap(rt.unbanUser))
+
 	return rt.router
 }

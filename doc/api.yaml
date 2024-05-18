@@ -102,7 +102,7 @@ paths:
               examples:
                 example1:
                   value:
-                    id: "123"
+                    userId: "123"
                     name: "Maria"
                     followerCount: 10
                     followingCount: 5
@@ -160,7 +160,7 @@ paths:
               examples:
                 example1:
                   value:
-                    id: "123"
+                    userId: "123"
                     name: "Maria"
                     followerCount: 10
                     followingCount: 5
@@ -186,13 +186,16 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Photo'
-                minItems: 1
-                maxItems: 100
-                description: |
-                  Shows the photos of the account followed by the user logged in reverse cronological order
+                type: object
+                properties:
+                  photos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Photo'
+                    minItems: 1
+                    maxItems: 100
+                    description: |
+                      Shows the photos of the account followed by the user logged in reverse chronological order
         "401":
           $ref: '#/components/responses/UnauthorizedError'
 
@@ -228,9 +231,11 @@ paths:
               examples:
                 example1:
                   value:
-                    id: "abc123"
+                    photosId: "abc123"
                     url: "https://api.example.com/v1"
                     timestamp: "2024-05-16T17:24:49.408Z"
+                    likesNumber: 0
+                    comments: [""]
         "401":
           $ref: '#/components/responses/UnauthorizedError'
     delete:
@@ -294,6 +299,15 @@ paths:
       responses:
         "201":
           description: photo commented successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+              examples:
+                example1:
+                  value:
+                    commentId: "123"
+                    text: "ciao come stai?"
         "401":
           $ref: '#/components/responses/UnauthorizedError'
     delete:
@@ -301,6 +315,14 @@ paths:
       description: allows to delete comment on photos
       summary: comments on photos
       operationId: uncommentPhoto
+      parameters:
+      - in: query
+        name: commentId
+        required: true
+        description: ID of the comment to delete
+        schema:
+          type: string
+          pattern: '^.*?$'
       responses:
         "204":
           description: Comment on photo deleted successfully
@@ -421,7 +443,7 @@ components:
     Identifier:
       type: object
       properties:
-        identifier:
+        userId:
           # change here if you decide to use an integer
           # or any other type of identifier
           type: string
@@ -434,26 +456,62 @@ components:
     Photo:
       type: object
       properties:
-        id:
+        photoId:
           type: string
           description: The unique identifier of the photo
         url:
           type: string
           format: url
-          description: The URL where the photo is stored
+          description: The URL where the photo is stored in the database
         timestamp:
           type: string
           format: date-time
           description: The date and time when the photo was uploaded
+        likesNumber:
+          type: integer
+          description: number of likes
+        comments:
+          type: array
+          items:
+            type: string
+            description: text of the comment
+          description: list of comments
+    Comment:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: The unique identifier of the user who commented
+        photosId:
+          type: string
+          description: The unique identifier of the photo
+        commentId:
+          type: string
+          description: The unique identifier of the comment
+        text:
+          type: string
+          description: text of the comment
     UserProfile:
       type: object
       properties:
         followerCount:
           type: integer
           description: The number of followers
+        followers:
+          type: array
+          items:
+            type: string
+            description: follower user ID
+          description: list of followers User IDs
         followingCount:
           type: integer
           description: The number of users followed
+        follows:
+          type: array
+          items:
+            type: string
+            description: follow user ID
+          description: list of follows User IDs
         photosCount:
           type: integer
           description: The number of photos uploaded
