@@ -84,6 +84,39 @@ paths:
 
 #-------Profile-------#
 
+  /users/:
+    get:
+      tags: ["search"]
+      summary: Search user profile by username
+      operationId: searchUser
+      description: search other user by Username and get their profile
+      parameters:
+        - $ref: '#/components/parameters/username'
+      responses:
+        "200":
+          description: Successfully return user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+              examples:
+                example1:
+                  value:
+                    id: "123"
+                    name: "Maria"
+                    followerCount: 10
+                    followingCount: 5
+                    photosCount: 20
+                    bannedUser: ["456", "789"]
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+        "404":
+          description: User not found
+        "403":
+          description: Forbidden, you are banned from viewing this profile
+
+
+
   /users/{userId}:
     parameters:
       - $ref: '#/components/parameters/userId'
@@ -303,7 +336,7 @@ paths:
           
 #-------ban-------#
 
-  /users/{userId}/ban/{bannedId}:
+  /users/{userId}/bans/{bannedId}:
     parameters:
       - $ref: '#/components/parameters/userId'
       - $ref: '#/components/parameters/bannedId'
@@ -328,38 +361,6 @@ paths:
         "401":
           $ref: '#/components/responses/UnauthorizedError'
 
-#-------search-------#
-
-  /search/{username}:
-    parameters:
-      - $ref: '#/components/parameters/username'
-    get:
-      tags: ["search"]
-      summary: Search user profile by username
-      operationId: searchUser
-      responses:
-        "200":
-          description: Successfully return user profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserProfile'
-              examples:
-                example1:
-                  value:
-                    id: "123"
-                    name: "Maria"
-                    followerCount: 10
-                    followingCount: 5
-                    photosCount: 20
-                    bannedUser: ["456", "789"]
-        "401":
-          $ref: '#/components/responses/UnauthorizedError'
-        "404":
-          description: User not found
-        "403":
-          description: Forbidden, you are banned from viewing this profile
-
 components:
   securitySchemes:
     bearerAuth:            # arbitrary name for the security scheme
@@ -373,7 +374,7 @@ components:
   parameters:
     username:
       name: username
-      in: path
+      in: query
       required: true
       description: Username of the user to search
       schema:
