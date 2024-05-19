@@ -17,6 +17,7 @@ type UserProfile struct {
 	Followers      []string `json:"followers"`
 	FollowingCount int      `json:"following_count"`
 	Follows        []string `json:"follows"`
+	Photos         []string `json:"photos"`
 	PhotosCount    int      `json:"photos_count"`
 	BannedUser     []string `json:"banned_user"`
 }

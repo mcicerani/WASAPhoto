@@ -41,7 +41,7 @@ type AppDatabase interface {
 
 	//User
 	SetUser(name string) error
-	UpdateUsername(name string, newname string) error
+	UpdateUsername(name string, id string, newname string) error
 	GetUserByUsername(name string) (UserProfile, error)
 	GetUserById(id string) (UserProfile, error)
 	DeleteUser(name string, id string) error
@@ -82,7 +82,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating table: %w", err)
 	}
-	
+
 	//UserProfile table
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS user_profile (
 		user_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,7 +99,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}
 
 	//Photo table
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS photo (
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS photos (
 		photos_id INTEGER PRIMARY KEY AUTOINCREMENT,
 		url TEXT,
 		timestamp TEXT,
