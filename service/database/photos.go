@@ -3,17 +3,31 @@ package database
 import (
 	"fmt"
 	"time"
-	"github.com/google/uuid"
+	"strconv"
 )
 
 // genera id unico per foto e commenti
-func generateUniquePhotoID() string {
-	return uuid.New().String()
+func (a *appdbimpl) generateUniquePhotoID(userId string) (string, error) {
+	//prendo l'ultimo id generato
+	var lastID int
+	err := a.c.QueryRow(`SELECT MAX(CAST(photos_id AS INTEGER)) FROM photos WHERE user_id = ?`, userId).Scan(&lastID)
+	if err != nil {
+		return "", fmt.Errorf("selecting last photo id: %w", err)
+	}
+	//incremento l'ultimo id generato di 1
+	return strconv.Itoa(lastID + 1), nil
 }
 
 
-func generateUniqueCommentID() string {
-	return uuid.New().String()
+func (a *appdbimpl) generateUniqueCommentID(userId string, photosId string) (string, error) {
+	//prendo l'ultimo id generato
+	var lastID int
+	err := a.c.QueryRow(`SELECT MAX(CAST(comment_id AS INTEGER)) FROM comment WHERE user_id = ? AND photos_id = ?`, userId, photosId).Scan(&lastID)
+	if err != nil {
+		return "", fmt.Errorf("selecting last comment id: %w", err)
+	}
+	//incremento l'ultimo id generato di 1
+	return strconv.Itoa(lastID + 1), nil
 }
 
 // genera timestamp per foto
@@ -26,7 +40,7 @@ func generateTimestamp() string {
  inizializza url generando un id unico per la foto*/
 
 func (a *appdbimpl) SetPhoto(userID string, binaryFile string) error {
-	photoID := generateUniquePhotoID()
+	photoID, _ := a.generateUniquePhotoID(userID)
 	url := "users/userID/photos/" + photoID
 	timestamp := generateTimestamp()
 	_, err := a.c.Exec(`INSERT INTO photos (user_id, binary_file, photos_id, url, timestamp, likes_number, comments) VALUES (?, ?, ?, ?, ?, ?)`, userID, binaryFile, photoID, url, timestamp, 0, []string{})
@@ -59,8 +73,9 @@ func (a *appdbimpl) DeletePhoto(userId string, photoID string) error {
 
 // SetComment inserisce un nuovo commento nel database nella tabella comment
 func (a *appdbimpl) SetComment(userId string, photoID string, text string) error {
-	commentID := generateUniqueCommentID()
-	_, err := a.c.Exec(`INSERT INTO comment (user_id, photos_id, comment_id, text_comment) VALUES (?, ?, ?, ?)`, userId, photoID, commentID, text)
+	commentID, _ := a.generateUniqueCommentID(userId, photoID)
+	url := "users/userID/photos/" + photoID + "/comments/" + commentID
+	_, err := a.c.Exec(`INSERT INTO comment (user_id, photos_id, comment_id, comment_url, text_comment) VALUES (?, ?, ?, ?, ?)`, userId, photoID, commentID, url, text)
 	if err != nil {
 		return fmt.Errorf("inserting comment: %w", err)
 	}
@@ -168,6 +183,7 @@ func (a *appdbimpl) GetLikesByPhotoID(userId string, photoID string) (int, error
 
 // GetPhotosStreamByUserID restituisce lista foto di tutti account seguiti da userID in ordine cronologico inverso
 func (a *appdbimpl) GetPhotosStreamByUserID(userID string) ([]Photo, error) {
+	
 	//ottengo lista follower da cui poi prendere le foto da mettere nella lista stream
 	followers, err := a.GetFollowersByUserID(userID)
 	if err != nil {

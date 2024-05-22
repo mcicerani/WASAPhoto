@@ -24,7 +24,7 @@ type UserProfile struct {
 
 type Photo struct {
 	UserID      string   `json:"user_id"`
-	BinaryFile	string   `json:"binary_file"`
+	BinaryFile  string   `json:"binary_file"`
 	PhotosId    string   `json:"photos_id"`
 	Url         string   `json:"url"`
 	Timestamp   string   `json:"timestamp"`
@@ -33,8 +33,9 @@ type Photo struct {
 }
 
 type Comment struct {
-	UserId    string `json:"user_id"`
-	PhotosId  string `json:"photos_id"`
-	CommentId string `json:"comment_id"`
-	Text      string `json:"text_comment"`
+	UserId     string `json:"user_id"`
+	PhotosId   string `json:"photos_id"`
+	CommentId  string `json:"comment_id"`
+	CommentUrl string `json:"comment_url"`
+	Text       string `json:"text_comment"`
 }

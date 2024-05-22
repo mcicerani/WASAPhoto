@@ -2,8 +2,20 @@ package database
 
 import (
 	"fmt"
-	"github.com/google/uuid"
+	"strconv"
 )
+
+func (a *appdbimpl) generateUniqueUserID() (string, error) {
+	var lastID int
+	err := a.c.QueryRow(`SELECT MAX(CAST(user_id AS INTEGER)) FROM identifier`).Scan(&lastID)
+	
+	//se non ci sono user_id nel database ritorna 0
+	if err != nil {
+		return "0", nil
+	}
+
+	return strconv.Itoa(lastID + 1), nil
+}
 
 // SetUser crea nuovo user nel database per le tabelle UserDetails, Identifier(attribuendo UserId unico stringa) e UserProfile
 func (a *appdbimpl) SetUser(name string) error {
@@ -13,7 +25,7 @@ func (a *appdbimpl) SetUser(name string) error {
 	}
 
 	// Generate a unique user ID
-	userID := generateUniqueUserID()
+	userID, _ := a.generateUniqueUserID()
 
 	_, err = a.c.Exec(`INSERT INTO identifier (username, user_id, is_new_user) VALUES (?, ?, ?)`, name, userID, true)
 	if err != nil {
@@ -28,10 +40,11 @@ func (a *appdbimpl) SetUser(name string) error {
 	return nil
 }
 
-// generateUniqueUserID genera un UserId unico per ogni user del database
-func generateUniqueUserID() string {
-	return uuid.New().String()
-}
+/*generateUniqueUserID genera un UserId unico per ogni utente incrementando l'ultimo id generato di 1 l'ultimo id generato. 
+inizialmente l'ultimo id generato è 0 */
+
+
+
 
 // GetUser restituisce i dettagli dell'user in user_profile con username=name
 func (a *appdbimpl) GetUserByUsername(name string) (UserProfile, error) {

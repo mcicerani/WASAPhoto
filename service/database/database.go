@@ -94,7 +94,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 
 	//Identifier table
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS identifier (
-		user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id TEXT,
 		is_new_user BOOLEAN
 	)`)
 	if err != nil {
@@ -121,7 +121,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS photos (
 		user_id TEXT,
 		binary_file TEXT,
-		photos_id INTEGER PRIMARY KEY AUTOINCREMENT,
+		photos_id TEXT,
 		url TEXT,
 		timestamp TEXT,
 		likes_number INTEGER
@@ -133,9 +133,10 @@ func New(db *sql.DB) (AppDatabase, error) {
 
 	//Comment table
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS comment (
-		comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
-		user_id INTEGER,
-		photos_id INTEGER,
+		comment_id TEXT,
+		user_id TEXT,
+		photos_id TEXT,
+		comment_url TEXT,
 		text_comment TEXT
 	)`)
 	if err != nil {
