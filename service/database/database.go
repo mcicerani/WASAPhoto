@@ -45,6 +45,23 @@ type AppDatabase interface {
 	GetUserByUsername(name string) (UserProfile, error)
 	GetUserById(id string) (UserProfile, error)
 	DeleteUser(name string, id string) error
+	FollowUser(userId string, followedUserID string) error
+	UnfollowUser(userId string, followedUserID string) error
+	GetFollowersByUserID(userId string) ([]UserProfile, error)
+	GetFollowsByUserID(userId string) ([]UserProfile, error)
+	BanUser(userId string, bannedUserID string) error
+	UnbanUser(userId string, bannedUserID string) error
+	SetPhoto(userId string, binaryFile string) error
+	GetPhotoByID(userId string, photoID string) (Photo, error)
+	DeletePhoto(userId string, photoID string) error
+	SetComment(userId string, photoID string, text string) error
+	GetCommentByID(userId string, photoID string, commentID string) (Comment, error)
+	DeleteComment(userId string, photoID string, commentID string) error
+	GetCommentsByPhotoID(userId string, photoID string) ([]Comment, error)
+	GetPhotosByUserID(userId string) ([]Photo, error)
+	SetLike(userId string, photoID string) error
+	DeleteLike(userId string, photoID string) error
+	GetLikesByPhotoID(userId string, photoID string) (int, error)
 
 	Ping() error
 }
@@ -85,12 +102,13 @@ func New(db *sql.DB) (AppDatabase, error) {
 
 	//UserProfile table
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS user_profile (
-		user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id TEXT,
 		username TEXT,
 		follower_count INTEGER,
 		followers TEXT,
 		following_count INTEGER,
 		follows TEXT,
+		photos TEXT,
 		photos_count INTEGER,
 		banned_user TEXT
 	)`)
@@ -100,10 +118,13 @@ func New(db *sql.DB) (AppDatabase, error) {
 
 	//Photo table
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS photos (
+		user_id TEXT,
+		binary_file TEXT,
 		photos_id INTEGER PRIMARY KEY AUTOINCREMENT,
 		url TEXT,
 		timestamp TEXT,
 		likes_number INTEGER
+		comments TEXT
 	)`)
 	if err != nil {
 		return nil, fmt.Errorf("creating table: %w", err)

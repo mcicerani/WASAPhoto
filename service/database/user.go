@@ -21,7 +21,7 @@ func (a *appdbimpl) SetUser(name string) error {
 		return fmt.Errorf("inserting identifier: %w", err)
 	}
 
-	_, err = a.c.Exec(`INSERT INTO user_profile (username, follower_count, followers, following_count, follows, photos, photos_count, banned_user) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, name, 0, "", 0, "", "", 0, "")
+	_, err = a.c.Exec(`INSERT INTO user_profile (username, user_id, follower_count, followers, following_count, follows, photos, photos_count, banned_user) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, name, "", 0, "", 0, "", "", 0, "")
 	if err != nil {
 		return fmt.Errorf("inserting user_profile: %w", err)
 	}
@@ -103,7 +103,7 @@ func (a *appdbimpl) UpdateUsername(name string, id string, newname string) error
 }
 
 // aggiunge alla lista dei follows l'utente da seguire
-func (a *appdbimpl) FollowUser(follower string, followed string) error {
+func (a *appdbimpl) FollowUser(userID string, followedUserID string) error {
 
 	_, err := a.c.Exec("UPDATE user_profile SET follows = array_append(follows, $2) WHERE username = $1")
 	if err != nil {
@@ -129,7 +129,7 @@ func (a *appdbimpl) FollowUser(follower string, followed string) error {
 }
 
 // rimuove dalla lista dei follows l'utente
-func (a *appdbimpl) UnfollowUser(follower string, followed string) error {
+func (a *appdbimpl) UnfollowUser(UserID string, followedUserID string) error {
 	_, err := a.c.Exec("UPDATE user_profile SET follows = array_remove(follows, $2) WHERE username = $1")
 	if err != nil {
 		return fmt.Errorf("removing follow to: %w", err)
@@ -153,8 +153,48 @@ func (a *appdbimpl) UnfollowUser(follower string, followed string) error {
 	return nil
 }
 
+// GetFollowersByUserID restituisce i dettagli dei followers in user_profile userid=id
+func (a *appdbimpl) GetFollowersByUserID(userID string) ([]UserProfile, error) {
+	rows, err := a.c.Query(`SELECT * FROM user_profile WHERE user_id = ?`, userID)
+	if err != nil {
+		return nil, fmt.Errorf("selecting followers: %w", err)
+	}
+	defer rows.Close()
+
+	var followers []UserProfile
+	for rows.Next() {
+		var follower UserProfile
+		err := rows.Scan(&follower.Username, &follower.UserId, &follower.FollowerCount, &follower.Followers, &follower.FollowingCount, &follower.Follows, &follower.Photos, &follower.PhotosCount, &follower.BannedUser)
+		if err != nil {
+			return nil, fmt.Errorf("scanning followers: %w", err)
+		}
+		followers = append(followers, follower)
+	}
+	return followers, nil
+}
+
+// GetFollowsByUserID restituisce i dettagli dei follows in user_profile con username=name
+func (a *appdbimpl) GetFollowsByUserID(userID string) ([]UserProfile, error) {
+	rows, err := a.c.Query(`SELECT * FROM user_profile WHERE user_id = ?`, userID)
+	if err != nil {
+		return nil, fmt.Errorf("selecting follows: %w", err)
+	}
+	defer rows.Close()
+
+	var follows []UserProfile
+	for rows.Next() {
+		var follow UserProfile
+		err := rows.Scan(&follow.Username, &follow.UserId, &follow.FollowerCount, &follow.Followers, &follow.FollowingCount, &follow.Follows, &follow.Photos, &follow.PhotosCount, &follow.BannedUser)
+		if err != nil {
+			return nil, fmt.Errorf("scanning follows: %w", err)
+		}
+		follows = append(follows, follow)
+	}
+	return follows, nil
+}
+
 // aggiunge alla lista dei ban l'utente da seguire
-func (a *appdbimpl) BanUser(banner string, banned string) error {
+func (a *appdbimpl) BanUser(userID string, bannedUserID string) error {
 	_, err := a.c.Exec("UPDATE user_profile SET banned_user = array_append(banned_user, $2) WHERE username = $1")
 	if err != nil {
 		return fmt.Errorf("adding ban to: %w", err)
@@ -163,7 +203,7 @@ func (a *appdbimpl) BanUser(banner string, banned string) error {
 }
 
 // rimuove dalla lista dei ban l'utente da seguire
-func (a *appdbimpl) UnbanUser(banner string, banned string) error {
+func (a *appdbimpl) UnbanUser(userID string, bannedUseriID string) error {
 	_, err := a.c.Exec("UPDATE user_profile SET banned_user = array_remove(banned_user, $2) WHERE username = $1")
 	if err != nil {
 		return fmt.Errorf("removing ban to: %w", err)

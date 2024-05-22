@@ -23,10 +23,12 @@ type UserProfile struct {
 }
 
 type Photo struct {
+	UserID      string   `json:"user_id"`
+	BinaryFile	string   `json:"binary_file"`
 	PhotosId    string   `json:"photos_id"`
 	Url         string   `json:"url"`
 	Timestamp   string   `json:"timestamp"`
-	LikesNumber int      `json:"username"`
+	LikesNumber int      `json:"likes_number"`
 	Comments    []string `json:"comments"`
 }
 
