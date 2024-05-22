@@ -62,6 +62,7 @@ type AppDatabase interface {
 	SetLike(userId string, photoID string) error
 	DeleteLike(userId string, photoID string) error
 	GetLikesByPhotoID(userId string, photoID string) (int, error)
+	GetPhotosStreamByUserID(userID string) ([]Photo, error)
 
 	Ping() error
 }
