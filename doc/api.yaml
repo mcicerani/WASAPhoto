@@ -17,6 +17,8 @@ info:
     A user can search other user profiles via username.
     A user can log in just by specifying the username.
   version: 1.0.0
+servers: 
+  - url: 'http://localhost:8080/api'
 tags:
   - name: login
     description: Operation related to login
@@ -54,7 +56,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserDetails'
+              $ref: '#/components/schemas/UserProfilePrototype'
         required: true
       responses:
         '200':
@@ -86,7 +88,7 @@ paths:
 
 #-------Profile-------#
 
-  /users/:
+  /users:
     get:
       tags: ["search"]
       summary: Search user profile by username
@@ -96,29 +98,13 @@ paths:
         - $ref: '#/components/parameters/username'
       responses:
         "200":
-          description: Successfully return user profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserProfile'
-              examples:
-                example1:
-                  value:
-                    userId: "123"
-                    name: "Maria"
-                    followerCount: 10
-                    followingCount: 5
-                    photosCount: 20
-                    bannedUser: ["456", "789"]
+          $ref: '#/components/responses/UserProfile'
         "401":
           $ref: '#/components/responses/UnauthorizedError'
-        "404":
-          description: User not found
         "403":
-          description: Forbidden, you are banned from viewing this profile
-
-
-
+          $ref: '#/components/responses/BannedUser'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
   /users/{userId}:
     parameters:
       - $ref: '#/components/parameters/userId'
@@ -132,7 +118,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserDetails'
+              $ref: '#/components/schemas/UserProfilePrototype'
         required: true
       responses:
         "201":
@@ -140,7 +126,7 @@ paths:
           content: 
             application/json:
               schema:
-                $ref: '#/components/schemas/UserDetails'
+                $ref: '#/components/schemas/UserProfilePrototype'
               examples:
                 example1:
                   value:
@@ -188,16 +174,26 @@ paths:
           content:
             application/json:
               schema:
+                description: |
+                  Shows the photos of the account followed by the user logged in reverse chronological order
                 type: object
                 properties:
                   photos:
+                    description: List of photos
                     type: array
                     items:
                       $ref: '#/components/schemas/Photo'
                     minItems: 1
                     maxItems: 100
-                    description: |
-                      Shows the photos of the account followed by the user logged in reverse chronological order
+              examples:
+                example1:
+                  value:
+                    photos:
+                      - photoId: "abc123"
+                        url: "https://api.example.com/v1"
+                        timestamp: "2024-05-16T17:24:49.408Z"
+                        likesNumber: 0
+                        comments: ["ciao come stai?"]
         "401":
           $ref: '#/components/responses/UnauthorizedError'
 
@@ -221,6 +217,7 @@ paths:
               description: photo to upload
               properties:
                 photo:
+                  description: The photo to upload
                   type: string
                   format: binary
       responses:
@@ -384,7 +381,6 @@ paths:
           description: user unbanned successfully
         "401":
           $ref: '#/components/responses/UnauthorizedError'
-
 components:
   securitySchemes:
     bearerAuth:            # arbitrary name for the security scheme
@@ -395,6 +391,67 @@ components:
   responses:
     UnauthorizedError:
       description: Access identifier is missing or invalid
+      content:
+        application/json:
+          schema:
+            description: Unauthorized error
+            type: object
+            properties:
+              message:
+                description: Error message
+                type: string
+                example: Unauthorized
+              code:
+                type: integer
+                example: 401
+                description: HTTP status code
+    BannedUser:
+      description: Forbidden, you are banned from viewing this profile
+      content:
+        application/json:
+          schema:
+            description: Banned user error
+            type: object
+            properties:
+              message:
+                description: Error message
+                type: string
+                example: You are banned from viewing this profile
+              code:
+                type: integer
+                example: 403
+                description: HTTP status code
+    UserNotFound:
+      description: A user with the specified ID was not found.
+      content:
+        application/json:
+          schema:
+            description: User not found error
+            type: object
+            properties:
+              message:
+                description: Error message
+                type: string
+                example: User not found
+              code:
+                type: integer
+                example: 404
+                description: HTTP status code
+    UserProfile:
+      description: Successfully return user profile
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserProfile'
+          examples:
+            example1:
+              value:
+                userId: "123"
+                name: "Maria"
+                followerCount: 10
+                followingCount: 5
+                photosCount: 20
+                bannedUser: ["456", "789"]
   parameters:
     username:
       name: username
@@ -402,6 +459,7 @@ components:
       required: true
       description: Username of the user to search
       schema:
+        description: Username of the user to search
         type: string
     userId:
       name: userId
@@ -409,6 +467,7 @@ components:
       required: true
       description: ID of the user
       schema:
+        description: ID of the user
         type: string    
     bannedId:
       name: bannedId
@@ -416,6 +475,7 @@ components:
       required: true
       description: ID of the user to ban/unban
       schema:
+        description: ID of the user to ban/unban
         type: string
     followedId:
       name: followedId
@@ -423,6 +483,7 @@ components:
       required: true
       description: ID of the user to follow/unfollow
       schema:
+        description: ID of the user to follow/unfollow
         type: string
     photosId:
       name: photosId
@@ -430,9 +491,11 @@ components:
       description: ID of the photo
       required: true
       schema:
+        description: ID of the photo
         type: string
   schemas:
-    UserDetails:
+    UserProfilePrototype:
+      description: User details
       type: object
       properties:
         username:
@@ -443,6 +506,7 @@ components:
           maxLength: 16
           description: The name of the user
     Identifier:
+      description: User identifier
       type: object
       properties:
         username:
@@ -460,6 +524,7 @@ components:
           example: false
           description: Indicates if the user is new
     Photo:
+      description: Photo details
       type: object
       properties:
         photoId:
@@ -483,6 +548,7 @@ components:
             description: text of the comment
           description: list of comments
     Comment:
+      description: Comment details
       type: object
       properties:
         userId:
@@ -498,6 +564,7 @@ components:
           type: string
           description: text of the comment
     UserProfile:
+      description: User profile
       type: object
       properties:
         followerCount:

@@ -6,6 +6,8 @@ import (
 	"strconv"
 )
 
+/*generateUniqueUserID genera un UserId unico per ogni utente incrementando l'ultimo id generato di 1 l'ultimo id generato.
+inizialmente l'ultimo id generato è 0 */
 func (a *appdbimpl) generateUniqueUserID() (string, error) {
 	var lastID int
 	err := a.c.QueryRow(`SELECT MAX(CAST(user_id AS INTEGER)) FROM identifier`).Scan(&lastID)
@@ -41,11 +43,7 @@ func (a *appdbimpl) SetUser(name string) error {
 	return nil
 }
 
-/*generateUniqueUserID genera un UserId unico per ogni utente incrementando l'ultimo id generato di 1 l'ultimo id generato.
-inizialmente l'ultimo id generato è 0 */
-
 // GetUserByUsername restituisce i dettagli dell'user in user_profile con username=name
-
 func (a *appdbimpl) GetUserByUsername(name string) (UserProfile, error) {
 	var user UserProfile
 	err := a.c.QueryRow(`SELECT * FROM user_profile WHERE username = ?`, name).Scan(&user.Username, &user.UserId, &user.FollowerCount, &user.Followers, &user.FollowingCount, &user.Follows, &user.PhotosCount, &user.BannedUser)
@@ -57,7 +55,6 @@ func (a *appdbimpl) GetUserByUsername(name string) (UserProfile, error) {
 }
 
 //GetUserById restituisce i dettagli dell'user in user_profile con UserId=id
-
 func (a *appdbimpl) GetUserById(id string) (UserProfile, error) {
 	var user UserProfile
 	err := a.c.QueryRow(`SELECT * FROM user_profile WHERE user_id = ?`, id).Scan(&user.Username, &user.UserId, &user.FollowerCount, &user.Followers, &user.FollowingCount, &user.Follows, &user.Photos, &user.PhotosCount, &user.BannedUser)
@@ -213,14 +210,12 @@ func (a *appdbimpl) UnfollowUser(UserID string, followedUserID string) error {
 	}
 
 	//Aggiorna follow count
-
 	_, err = a.c.Exec("UPDATE user_profile SET following_count = following_count - 1 WHERE user_id = ?", UserID)
 	if err != nil {
 		return fmt.Errorf("remove follow from following count")
 	}
 
 	//Aggiorna follower count
-
 	_, err = a.c.Exec("UPDATE user_profile SET follower_count = follower_count -1 WHERE user_id = ?", followedUserID)
 	if err != nil {
 		return fmt.Errorf("removing follower from followers count")
@@ -278,6 +273,7 @@ func (a *appdbimpl) BanUser(userID string, bannedUserID string) error {
 
 // UnbanUser  rimuove dalla lista dei ban l'utente da seguire
 func (a *appdbimpl) UnbanUser(userID string, bannedUserID string) error {
+	
 	//Ricava la lista banned_user corrente come json
 	var bannedUsersJSON string
 	err := a.c.QueryRow("SELECT banned_user FROM user_profile WHERE user_id = ?", userID).Scan(&bannedUsersJSON)
