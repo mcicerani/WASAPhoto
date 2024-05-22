@@ -129,7 +129,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		binary_file TEXT,
 		photos_id TEXT,
 		url TEXT,
-		timestamp TEXT,
+		timestamp DATETIME,
 		likes_number INTEGER
 		comments TEXT
 	)`)
@@ -154,6 +154,6 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}, nil
 }
 
-func (db *appdbimpl) Ping() error {
-	return db.c.Ping()
+func (a *appdbimpl) Ping() error {
+	return a.c.Ping()
 }
