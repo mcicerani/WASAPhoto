@@ -2,8 +2,8 @@ package database
 
 import (
 	"fmt"
-	"time"
 	"strconv"
+	"time"
 )
 
 // genera id unico per foto e commenti
@@ -17,7 +17,6 @@ func (a *appdbimpl) generateUniquePhotoID(userId string) (string, error) {
 	//incremento l'ultimo id generato di 1
 	return strconv.Itoa(lastID + 1), nil
 }
-
 
 func (a *appdbimpl) generateUniqueCommentID(userId string, photosId string) (string, error) {
 	//prendo l'ultimo id generato
@@ -37,7 +36,7 @@ func generateTimestamp() string {
 }
 
 /*SetPhoto inserisce una nuova foto nel database nella tabella photos e ne
- inizializza url generando un id unico per la foto*/
+inizializza url generando un id unico per la foto*/
 
 func (a *appdbimpl) SetPhoto(userID string, binaryFile string) error {
 	photoID, _ := a.generateUniquePhotoID(userID)
@@ -50,7 +49,6 @@ func (a *appdbimpl) SetPhoto(userID string, binaryFile string) error {
 	return nil
 }
 
-
 // GetPhotoByID restituisce i dettagli della foto in photos con photos_id=id
 func (a *appdbimpl) GetPhotoByID(userId string, photoID string) (Photo, error) {
 	var photo Photo
@@ -60,7 +58,6 @@ func (a *appdbimpl) GetPhotoByID(userId string, photoID string) (Photo, error) {
 	}
 	return photo, nil
 }
-
 
 // DeletePhoto elimina la foto con photos_id=id dalla tabella photos
 func (a *appdbimpl) DeletePhoto(userId string, photoID string) error {
@@ -101,14 +98,12 @@ func (a *appdbimpl) DeleteComment(userId string, photoID string, commentID strin
 	return nil
 }
 
-
 // GetCommentsByPhotoID restituisce i dettagli dei commenti in comment con photos_id=id
 func (a *appdbimpl) GetCommentsByPhotoID(userId string, photoID string) ([]Comment, error) {
 	rows, err := a.c.Query(`SELECT * FROM comment WHERE user_id = ? AND photos_id = ?`, userId, photoID)
 	if err != nil {
 		return nil, fmt.Errorf("selecting comments: %w", err)
 	}
-	defer rows.Close()
 
 	var comments []Comment
 	for rows.Next() {
@@ -128,7 +123,6 @@ func (a *appdbimpl) GetPhotosByUserID(userId string) ([]Photo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("selecting photos: %w", err)
 	}
-	defer rows.Close()
 
 	var photos []Photo
 	for rows.Next() {
@@ -141,7 +135,6 @@ func (a *appdbimpl) GetPhotosByUserID(userId string) ([]Photo, error) {
 	}
 	return photos, nil
 }
-
 
 // SetLike incrementa il numero di like di una foto
 func (a *appdbimpl) SetLike(userId string, photoID string) error {
@@ -180,10 +173,9 @@ func (a *appdbimpl) GetLikesByPhotoID(userId string, photoID string) (int, error
 	return photo.LikesNumber, nil
 }
 
-
 // GetPhotosStreamByUserID restituisce lista foto di tutti account seguiti da userID in ordine cronologico inverso
 func (a *appdbimpl) GetPhotosStreamByUserID(userID string) ([]Photo, error) {
-	
+
 	//ottengo lista follower da cui poi prendere le foto da mettere nella lista stream
 	followers, err := a.GetFollowersByUserID(userID)
 	if err != nil {

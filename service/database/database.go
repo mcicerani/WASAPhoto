@@ -40,7 +40,7 @@ import (
 type AppDatabase interface {
 
 	//User
-	
+
 	generateUniqueUserID() (string, error)
 	generateUniquePhotoID(userID string) (string, error)
 	generateUniqueCommentID(userID string, photoID string) (string, error)
