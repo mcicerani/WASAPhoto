@@ -165,3 +165,33 @@ func (a *appdbimpl) GetLikesByPhotoID(userId string, photoID string) (int, error
 	return photo.LikesNumber, nil
 }
 
+
+// GetPhotosStreamByUserID restituisce lista foto di tutti account seguiti da userID in ordine cronologico inverso
+func (a *appdbimpl) GetPhotosStreamByUserID(userID string) ([]Photo, error) {
+	//ottengo lista follower da cui poi prendere le foto da mettere nella lista stream
+	followers, err := a.GetFollowersByUserID(userID)
+	if err != nil {
+		return nil, fmt.Errorf("getting followers: %w", err)
+	}
+
+	// prendo le foto di tutti gli utenti seguiti e le ordino per timestamp
+	var photos []Photo
+	for _, follower := range followers {
+		followerPhotos, err := a.GetPhotosByUserID(follower.UserId)
+		if err != nil {
+			return nil, fmt.Errorf("getting photos: %w", err)
+		}
+		photos = append(photos, followerPhotos...)
+	}
+
+	// ordino le foto per timestamp
+	for i := 0; i < len(photos); i++ {
+		for j := i + 1; j < len(photos); j++ {
+			if photos[i].Timestamp < photos[j].Timestamp {
+				photos[i], photos[j] = photos[j], photos[i]
+			}
+		}
+	}
+
+	return photos, nil
+}

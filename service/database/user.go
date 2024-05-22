@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-
 	"github.com/google/uuid"
 )
 
@@ -211,22 +210,6 @@ func (a *appdbimpl) UnbanUser(userID string, bannedUseriID string) error {
 	return nil
 }
 
-// GetPhotosStreamByUserID restituisce lista foto di tutti account seguiti da userID in ordine cronologico inverso
-func (a *appdbimpl) GetPhotosStreamByUserID(userID string) ([]Photo, error) {
-	rows, err := a.c.Query(`SELECT * FROM photos WHERE user_id = ?`, userID)
-	if err != nil {
-		return nil, fmt.Errorf("selecting photos: %w", err)
-	}
-	defer rows.Close()
 
-	var photos []Photo
-	for rows.Next() {
-		var photo Photo
-		err := rows.Scan(&photo.UserID, &photo.BinaryFile, &photo.PhotosId, &photo.Url, &photo.Timestamp, &photo.LikesNumber, &photo.Comments)
-		if err != nil {
-			return nil, fmt.Errorf("scanning photos: %w", err)
-		}
-		photos = append(photos, photo)
-	}
-	return photos, nil
-}
+
+
