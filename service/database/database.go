@@ -40,6 +40,10 @@ import (
 type AppDatabase interface {
 
 	//User
+	
+	generateUniqueUserID() (string, error)
+	generateUniquePhotoID(userID string) (string, error)
+	generateUniqueCommentID(userID string, photoID string) (string, error)
 	SetUser(name string) error
 	UpdateUsername(name string, id string, newname string) error
 	GetUserByUsername(name string) (UserProfile, error)
@@ -63,6 +67,8 @@ type AppDatabase interface {
 	DeleteLike(userId string, photoID string) error
 	GetLikesByPhotoID(userId string, photoID string) (int, error)
 	GetPhotosStreamByUserID(userID string) ([]Photo, error)
+
+	//Ping checks if the database is reachable
 
 	Ping() error
 }
