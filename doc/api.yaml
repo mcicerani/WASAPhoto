@@ -190,7 +190,7 @@ paths:
                   value:
                     photos:
                       - photoId: "abc123"
-                        url: "Users/{userId}/photos/{photosId}"
+                        url: "https://example.com/Users/{userId}/photos/{photosId}"
                         timestamp: "2024-05-16T17:24:49.408Z"
                         likes: ["1","2324","44"]
                         comments: ["ciao come stai?"]
@@ -233,27 +233,21 @@ paths:
                 example1:
                   value:
                     photosId: "abc123"
-                    url: "Users/{userId}/photos/{photosId}"
+                    url: "https://example.com/Users/{userId}/photos/{photosId}"
                     timestamp: "2024-05-16T17:24:49.408Z"
                     likes: ["1","32"]
                     comments: [""]
         "401":
           $ref: '#/components/responses/UnauthorizedError'
+  /users/{userId}/photos/{photosId}:
+    parameters:
+      - $ref: '#/components/parameters/userId'    
+      - $ref: '#/components/parameters/photosId'
     delete:
       tags: ["photos"]
       summary: Delete a photo
       description: Deletes a photo belonging to the authenticated user.
       operationId: deletePhoto
-      parameters:
-        - in: query
-          name: photoId
-          required: true
-          description: ID of the photo to delete
-          schema:
-            type: string
-            pattern: '^.*?$'
-            minLength: 1
-            maxLength: 20
       responses:
         '204':
           description: |
