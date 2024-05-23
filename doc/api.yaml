@@ -83,6 +83,8 @@ paths:
                     username: "Maria"
                     identifier: "abc123"
                     isNewUser: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
                     
 ############## User action ##############
 
@@ -634,6 +636,22 @@ components:
               code:
                 type: integer
                 example: 404
+                description: HTTP status code
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            description: Bad request
+            type: object
+            properties:
+              message:
+                description: Error message
+                type: string
+                example: Bad Request
+              code:
+                type: integer
+                example: 400
                 description: HTTP status code
     UserProfile:
       description: Successfully return user profile
