@@ -43,7 +43,7 @@ func (a *appdbimpl) GetUserById(id string) (User, error) {
 		return user, fmt.Errorf("converting user ID to integer: %w", err)
 	}
 
-	err = a.c.QueryRow(`SELECT * FROM users WHERE user_id = ?`, userID).Scan(&user.Username, &user.ID)
+	err = a.c.QueryRow(`SELECT * FROM users WHERE ID = ?`, userID).Scan(&user.Username, &user.ID)
 	if err != nil {
 		return user, fmt.Errorf("selecting user: %w", err)
 	}
@@ -59,131 +59,45 @@ func (a *appdbimpl) DeleteUser(username string) error {
 	return nil
 }
 
-// ------> UpdateUsername  cambia username dell'user con username=name e userid=id controllando prima il corrispondente id in identifier e user_profile e infine aggiornando il campo username in user_details
-func (a *appdbimpl) UpdateUsername(name string, id string, newname string) error {
-	var user User
-	err := a.c.QueryRow(`SELECT * FROM identifier WHERE user_id = ?`, id).Scan(&user.Username, &user.UserId, &user.IsNewUser)
+// UpdateUsername  cambia username dell'user con username=newname controllando prima il corrispondente id in users
+func (a *appdbimpl) UpdateUsername(id string, newname string) error {
+
+	userID, err := strconv.Atoi(id)
 	if err != nil {
-		return fmt.Errorf("selecting user: %w", err)
+		return fmt.Errorf("converting user ID to integer: %w", err)
+	}
+
+	_, err = a.c.Exec(`UPDATE users SET username = ? WHERE ID = ?`, newname, userID)
+	if err != nil {
+		return fmt.Errorf("updating username: %w", err)
 	}
 
 	return nil
 }
 
-// FollowUser aggiunge alla lista dei follows l'utente da seguire
-func (a *appdbimpl) FollowUser(userID string, followedUserID string) error {
+// FollowUser crea nella tabella la relazione followed/follower
+func (a *appdbimpl) FollowUser(id string, followedUserID string) error {
 
-	_, err := a.c.Exec("UPDATE user_profile SET follows = json_insert(follows, '$[#]', ?) WHERE user_id = ?", followedUserID, userID)
+	userID, err := strconv.Atoi(id)
 	if err != nil {
-		return fmt.Errorf("adding follow to: %w", err)
+		return fmt.Errorf("converting user ID to integer: %w", err)
 	}
 
-	_, err = a.c.Exec("UPDATE user_profile SET followers = json_insert(followers, '$[#]', ?) WHERE user_id = ?", userID, followedUserID)
+	followedID, err := strconv.Atoi(followedUserID)
 	if err != nil {
-		return fmt.Errorf("adding follower to: %s", err)
+		return fmt.Errorf("converting user ID to integer: %w", err)
 	}
 
-	_, err = a.c.Exec("UPDATE user_profile SET following_count = following_count + 1 WHERE user_id = ?", userID)
+	_, err = a.c.Exec(`INSERT into followers (followerID, followedID) VALUES(?, ?)`, userID, followedID)
 	if err != nil {
-		return fmt.Errorf("adding follow to following count")
-	}
+		return fmt.Errorf("following user: %w", err)
 
-	_, err = a.c.Exec("UPDATE user_profile SET follower_count = follower_count + 1 WHERE user_id = ?", followedUserID)
-	if err != nil {
-		return fmt.Errorf("adding follower to followers count")
 	}
-
 	return nil
 }
 
-// UnfollowUser  rimuove dalla lista dei follows l'utente
+// --------> UnfollowUser cancella dalla tabella followers la relazione tra i 2 account
 func (a *appdbimpl) UnfollowUser(UserID string, followedUserID string) error {
-
-	//Rimuove dalla lista dei follows
-
-	// Recupera l'array JSON corrente dalla colonna `follows'
-	var followsJSON string
-	err := a.c.QueryRow("SELECT follows FROM user_profile WHERE user_id = ?", UserID).Scan(&followsJSON)
-	if err != nil {
-		return fmt.Errorf("retrieving follows array: %w", err)
-	}
-
-	// Parsing dell'array JSON
-	var follows []string
-	if followsJSON != "" {
-		if err := json.Unmarshal([]byte(followsJSON), &follows); err != nil {
-			return fmt.Errorf("parsing follows array: %w", err)
-		}
-	}
-
-	// Rimuovi l'elemento specificato dall'array
-	var newFollows []string
-	for _, id := range follows {
-		if id != followedUserID {
-			newFollows = append(newFollows, id)
-		}
-	}
-
-	// Converti l'array aggiornato di nuovo in JSON
-	newFollowsJSON, err := json.Marshal(newFollows)
-	if err != nil {
-		return fmt.Errorf("serializing follows array: %w", err)
-	}
-
-	// Aggiorna la colonna con il nuovo array JSON
-	_, err = a.c.Exec("UPDATE user_profile SET follows = ? WHERE user_id = ?", string(newFollowsJSON), UserID)
-	if err != nil {
-		return fmt.Errorf("updating follows array: %w", err)
-	}
-
-	//Rimuove dalla lista dei followers dell'altro utente
-
-	// Recupera l'array JSON corrente dalla colonna `followers`
-	var followersJSON string
-	err = a.c.QueryRow("SELECT followers FROM user_profile WHERE user_id = ?", followedUserID).Scan(&followersJSON)
-	if err != nil {
-		return fmt.Errorf("retrieving followers array: %w", err)
-	}
-
-	// Parsing dell'array JSON
-	var followers []string
-	if followersJSON != "" {
-		if err := json.Unmarshal([]byte(followersJSON), &followers); err != nil {
-			return fmt.Errorf("parsing followers array: %w", err)
-		}
-	}
-
-	// Rimuovi l'elemento specificato dall'array
-	var newFollowers []string
-	for _, id := range followers {
-		if id != followedUserID {
-			newFollowers = append(newFollowers, id)
-		}
-	}
-
-	// Converti l'array aggiornato di nuovo in JSON
-	newFollowersJSON, err := json.Marshal(newFollowers)
-	if err != nil {
-		return fmt.Errorf("serializing followers array: %w", err)
-	}
-
-	// Aggiorna la colonna con il nuovo array JSON
-	_, err = a.c.Exec("UPDATE user_profile SET followers = ? WHERE user_id = ?", string(newFollowersJSON), followedUserID)
-	if err != nil {
-		return fmt.Errorf("updating followers array: %w", err)
-	}
-
-	//Aggiorna follow count
-	_, err = a.c.Exec("UPDATE user_profile SET following_count = following_count - 1 WHERE user_id = ?", UserID)
-	if err != nil {
-		return fmt.Errorf("remove follow from following count")
-	}
-
-	//Aggiorna follower count
-	_, err = a.c.Exec("UPDATE user_profile SET follower_count = follower_count -1 WHERE user_id = ?", followedUserID)
-	if err != nil {
-		return fmt.Errorf("removing follower from followers count")
-	}
 
 	return nil
 }
