@@ -192,7 +192,7 @@ paths:
                       - photoId: "abc123"
                         url: "https://api.example.com/v1"
                         timestamp: "2024-05-16T17:24:49.408Z"
-                        likesNumber: 0
+                        likesNumber: ["1","2324","44"]
                         comments: ["ciao come stai?"]
         "401":
           $ref: '#/components/responses/UnauthorizedError'
@@ -220,6 +220,8 @@ paths:
                   description: The photo to upload
                   type: string
                   format: binary
+                  minLength: 1
+                  maxLength: 64
       responses:
         "201":
           description: photo uploaded successfully
@@ -233,7 +235,7 @@ paths:
                     photosId: "abc123"
                     url: "https://api.example.com/v1"
                     timestamp: "2024-05-16T17:24:49.408Z"
-                    likesNumber: 0
+                    likesNumber: ["1","32"]
                     comments: [""]
         "401":
           $ref: '#/components/responses/UnauthorizedError'
@@ -250,6 +252,8 @@ paths:
           schema:
             type: string
             pattern: '^.*?$'
+            minLength: 1
+            maxLength: 20
       responses:
         '204':
           description: |
@@ -270,7 +274,7 @@ paths:
       operationId: likePhoto
       responses:
         "201":
-          description: photo liked successfully
+          $ref: "#/components/responses/LikePhoto"
         "401":
           $ref: '#/components/responses/UnauthorizedError'
     delete:
@@ -280,7 +284,7 @@ paths:
       operationId: unlikePhoto
       responses:
         "204":
-          description: photo unliked successfully
+          description: photo like removed
         "401":
           $ref: '#/components/responses/UnauthorizedError'
           
@@ -322,13 +326,86 @@ paths:
         schema:
           type: string
           pattern: '^.*?$'
+          minLength: 1
+          maxLength: 20
       responses:
         "204":
-          description: Comment on photo deleted successfully
+          description: comment deleted successfully
         "401":
           $ref: '#/components/responses/UnauthorizedError'
+    get:
+      tags: ["comments"]
+      description: get comments on a photo
+      summary: retrieve comments for a photo
+      operationId: GetPhotoComments
+      responses:
+        "200":
+          description: successfully retrieve comments
+          content:
+            application/json:
+              schema:
+                description: list of comments
+                type: object
+                properties:
+                  comments:
+                    description: list of comments
+                    type: array
+                    minItems: 0
+                    maxItems: 1000
+                    items: 
+                      $ref: "#/components/schemas/Comment"
+              examples:
+                example:
+                  value:
+                    comments:
+                      - commentId: "123"
+                        userId: "1"
+                        text: "Nice photo"
+                      - commentId: "12"
+                        userId: "32"
+                        text: "You are great"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404": 
+          $ref: "#/components/responses/UserNotFound"
 
-#-------follows-------#
+#-------follows e followers-------#
+
+  /users/{userId}/follows:
+    parameters:
+      - $ref: "#/components/parameters/userId"
+    get:
+      tags: ["user"]
+      description: get the list of follows
+      summary: retrieve list of follows for the user
+      operationId: getUserfollows
+      responses:
+        "200": 
+          description: successfully retrieve follows list
+          content:
+            application/json: 
+              schema:
+                description: list of follows
+                type: object
+                properties:
+                  follows:
+                    description: list of follows
+                    type: array
+                    minItems: 0
+                    maxItems: 1000
+                    items:
+                      type: string
+              examples:
+                example:
+                  value:
+                    follows:
+                      - "123"
+                      - "1234"
+                      - "40"
+        "401": 
+          $ref: "#/components/responses/UnauthorizedError"
+        "404": 
+          $ref: "#/components/responses/UserNotFound"
 
   /users/{userId}/follows/{followedId}:
     parameters:
@@ -341,7 +418,7 @@ paths:
       operationId: followUser
       responses:
         "201":
-          description: user followed successfully
+          $ref: '#/components/responses/FollowUser'
         "401":
           $ref: '#/components/responses/UnauthorizedError'
     delete:
@@ -350,10 +427,46 @@ paths:
       summary: another account
       operationId: unfollowUser
       responses:
-        "201":
-          description: user unfollowed successfully
+        "200":
+          $ref: '#/components/responses/UnfollowUser'
         "401":
           $ref: '#/components/responses/UnauthorizedError'
+
+  /users/{userId}/followers:
+    parameters:
+      - $ref: "#/components/parameters/userId"
+    get:
+      tags: ["user"]
+      description: get the list of followers
+      summary: retrieve list of followers for the user
+      operationId: getUserfollowers
+      responses:
+        "200": 
+          description: successfully retrieve followers list
+          content:
+            application/json: 
+              schema:
+                description: list of followers
+                type: object
+                properties:
+                  followers:
+                    description: list of followers
+                    type: array
+                    items:
+                      type: string
+                    minItems: 0
+                    maxItems: 1000
+              examples:
+                example:
+                  value:
+                    followers:
+                      - "123"
+                      - "1234"
+                      - "40"
+        "401": 
+          $ref: "#/components/responses/UnauthorizedError"
+        "404": 
+          $ref: "#/components/responses/UserNotFound"
           
 #-------ban-------#
 
@@ -368,7 +481,7 @@ paths:
       operationId: banUser
       responses:
         "201":
-          description: user banned successfully
+          $ref: '#/components/responses/BanUser'
         "401":
           $ref: '#/components/responses/UnauthorizedError'
     delete:
@@ -377,8 +490,8 @@ paths:
       summary: unban another account
       operationId: unbanUser
       responses:
-        "201":
-          description: user unbanned successfully
+        "200":
+          $ref: '#/components/responses/UnbanUser'
         "401":
           $ref: '#/components/responses/UnauthorizedError'
 components:
@@ -389,6 +502,90 @@ components:
       bearerFormat: string
       description: User ID used as bearer token
   responses:
+    LikePhoto:
+      description: Like a photo
+      content:
+        application/json:
+          schema:
+            description: Like a photo
+            type: object
+            properties:
+              userId:
+                description: user to like photo
+                type: string
+                example: "123"
+              userPhotoId:
+                description: user that posted the photo
+                type: string
+                example: "1"
+              photoId:
+                description: Photo unique identifier
+                type: string
+                example: "1234"
+    FollowUser: 
+      description: Follow another User
+      content:
+        application/json:
+          schema:
+            description: Follow another user
+            type: object
+            properties:
+              followsId:
+                description: followed User
+                type: string
+                example: "1"
+              userId:
+                description: user to issue the follow
+                type: string
+                example: "123"
+    UnfollowUser: 
+      description: Unfollow another User
+      content:
+        application/json:
+          schema:
+            description: Unfollow another user
+            type: object
+            properties:
+              followsId:
+                description: Unfollowed User
+                type: string
+                example: "1"
+              userId:
+                description: user to issue the unfollow
+                type: string
+                example: "123"
+    BanUser: 
+      description: Ban another User
+      content:
+        application/json:
+          schema:
+            description: ban another user
+            type: object
+            properties:
+              bannedId:
+                description: bannedUser
+                type: string
+                example: "1"
+              userId:
+                description: user to issue ban
+                type: string
+                example: "123"
+    UnbanUser: 
+      description: Unban another User
+      content:
+        application/json:
+          schema:
+            description: Unban another user
+            type: object
+            properties:
+              bannedId:
+                description: bannedUser
+                type: string
+                example: "1"
+              userId:
+                description: user to issue unban
+                type: string
+                example: "123"
     UnauthorizedError:
       description: Access identifier is missing or invalid
       content:
@@ -461,6 +658,9 @@ components:
       schema:
         description: Username of the user to search
         type: string
+        pattern: '^.*?$'
+        minLength: 1
+        maxLength: 20
     userId:
       name: userId
       in: path
@@ -469,6 +669,9 @@ components:
       schema:
         description: ID of the user
         type: string    
+        pattern: '^.*?$'
+        minLength: 1
+        maxLength: 20
     bannedId:
       name: bannedId
       in: path
@@ -477,6 +680,9 @@ components:
       schema:
         description: ID of the user to ban/unban
         type: string
+        pattern: '^.*?$'
+        minLength: 1
+        maxLength: 20
     followedId:
       name: followedId
       in: path
@@ -485,6 +691,9 @@ components:
       schema:
         description: ID of the user to follow/unfollow
         type: string
+        pattern: '^.*?$'
+        minLength: 1
+        maxLength: 20
     photosId:
       name: photosId
       in: path
@@ -493,6 +702,9 @@ components:
       schema:
         description: ID of the photo
         type: string
+        pattern: '^.*?$'
+        minLength: 1
+        maxLength: 20
   schemas:
     UserProfilePrototype:
       description: User details
@@ -538,11 +750,18 @@ components:
           type: string
           format: date-time
           description: The date and time when the photo was uploaded
-        likesNumber:
-          type: integer
-          description: number of likes
+        likes:
+          type: array
+          minItems: 0
+          maxItems: 100
+          items:
+            type: string
+            description: IDs of the user who liked the photo
+          description: user who liked the photo
         comments:
           type: array
+          minItems: 0
+          maxItems: 100
           items:
             type: string
             description: text of the comment
@@ -572,6 +791,8 @@ components:
           description: The number of followers
         followers:
           type: array
+          minItems: 0
+          maxItems: 1000
           items:
             type: string
             description: follower user ID
@@ -581,6 +802,8 @@ components:
           description: The number of users followed
         follows:
           type: array
+          minItems: 0
+          maxItems: 1000
           items:
             type: string
             description: follow user ID
@@ -590,6 +813,8 @@ components:
           description: The number of photos uploaded
         bannedUser:
           type: array
+          minItems: 0
+          maxItems: 100
           items:
             type: string
             description: banned user ID
