@@ -190,9 +190,9 @@ paths:
                   value:
                     photos:
                       - photoId: "abc123"
-                        url: "https://api.example.com/v1"
+                        url: "Users/{userId}/photos/{photosId}"
                         timestamp: "2024-05-16T17:24:49.408Z"
-                        likesNumber: ["1","2324","44"]
+                        likes: ["1","2324","44"]
                         comments: ["ciao come stai?"]
         "401":
           $ref: '#/components/responses/UnauthorizedError'
@@ -233,9 +233,9 @@ paths:
                 example1:
                   value:
                     photosId: "abc123"
-                    url: "https://api.example.com/v1"
+                    url: "Users/{userId}/photos/{photosId}"
                     timestamp: "2024-05-16T17:24:49.408Z"
-                    likesNumber: ["1","32"]
+                    likes: ["1","32"]
                     comments: [""]
         "401":
           $ref: '#/components/responses/UnauthorizedError'
@@ -277,6 +277,12 @@ paths:
           $ref: "#/components/responses/LikePhoto"
         "401":
           $ref: '#/components/responses/UnauthorizedError'
+  
+  /users/{userId}/photos/{photosId}/likes/{likeId}:
+    parameters:
+      - $ref: '#/components/parameters/userId'
+      - $ref: '#/components/parameters/photosId'
+      - $ref: '#/components/parameters/likeId'
     delete:
       tags: ["likes"]
       description: allows to unlike Photo
@@ -311,26 +317,6 @@ paths:
                   value:
                     commentId: "123"
                     text: "ciao come stai?"
-        "401":
-          $ref: '#/components/responses/UnauthorizedError'
-    delete:
-      tags: ["comments"]
-      description: allows to delete comment on photos
-      summary: comments on photos
-      operationId: uncommentPhoto
-      parameters:
-      - in: query
-        name: commentId
-        required: true
-        description: ID of the comment to delete
-        schema:
-          type: string
-          pattern: '^.*?$'
-          minLength: 1
-          maxLength: 20
-      responses:
-        "204":
-          description: comment deleted successfully
         "401":
           $ref: '#/components/responses/UnauthorizedError'
     get:
@@ -368,6 +354,23 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
         "404": 
           $ref: "#/components/responses/UserNotFound"
+
+  /users/{userId}/photos/{photosId}/comments/{commentId}:
+    parameters:
+      - $ref: '#/components/parameters/userId'
+      - $ref: '#/components/parameters/photosId'
+      - $ref: '#/components/parameters/commentId'
+    delete:
+      tags: ["comments"]
+      description: allows to delete comment on photos
+      summary: comments on photos
+      operationId: uncommentPhoto
+      responses:
+        "204":
+          description: comment deleted successfully
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+
 
 #-------follows e followers-------#
 
@@ -522,6 +525,10 @@ components:
                 description: Photo unique identifier
                 type: string
                 example: "1234"
+              likeId:
+                description: like unique identifier
+                type: string
+                example: "134"
     FollowUser: 
       description: Follow another User
       content:
@@ -669,6 +676,28 @@ components:
       schema:
         description: ID of the user
         type: string    
+        pattern: '^.*?$'
+        minLength: 1
+        maxLength: 20
+    commentId:
+      name: commentId
+      in: path
+      required: true
+      description: ID of the comment to delete
+      schema:
+        description: ID of the comment to delete
+        type: string
+        pattern: '^.*?$'
+        minLength: 1
+        maxLength: 20
+    likeId:
+      name: likeId
+      in: path
+      required: true
+      description: ID of the like to delete
+      schema:
+        description: ID of the like to delete
+        type: string
         pattern: '^.*?$'
         minLength: 1
         maxLength: 20
