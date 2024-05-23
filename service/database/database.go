@@ -46,13 +46,13 @@ type AppDatabase interface {
 	generateUniqueCommentID(userID string, photoID string) (string, error)
 	SetUser(name string) error
 	UpdateUsername(name string, id string, newname string) error
-	GetUserByUsername(name string) (UserProfile, error)
-	GetUserById(id string) (UserProfile, error)
+	GetUserByUsername(name string) (User, error)
+	GetUserById(id string) (User, error)
 	DeleteUser(name string, id string) error
 	FollowUser(userId string, followedUserID string) error
 	UnfollowUser(userId string, followedUserID string) error
-	GetFollowersByUserID(userId string) ([]UserProfile, error)
-	GetFollowsByUserID(userId string) ([]UserProfile, error)
+	GetFollowersByUserID(userId string) ([]User, error)
+	GetFollowsByUserID(userId string) ([]User, error)
 	BanUser(userId string, bannedUserID string) error
 	UnbanUser(userId string, bannedUserID string) error
 	SetPhoto(userId string, binaryFile string) error
@@ -90,34 +90,11 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}
 
 	// Create the tables if they don't exist
+
 	//User table
-	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS user_details (
-		username TEXT
-	)`)
-	if err != nil {
-		return nil, fmt.Errorf("creating table: %w", err)
-	}
-
-	//Identifier table
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS identifier (
-		user_id TEXT,
-		is_new_user BOOLEAN
-	)`)
-	if err != nil {
-		return nil, fmt.Errorf("creating table: %w", err)
-	}
-
-	//UserProfile table
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS user_profile (
-		user_id TEXT,
-		username TEXT,
-		follower_count INTEGER,
-		followers TEXT,
-		following_count INTEGER,
-		follows TEXT,
-		photos TEXT,
-		photos_count INTEGER,
-		banned_user TEXT
+	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT NOT NULL UNIQUE
 	)`)
 	if err != nil {
 		return nil, fmt.Errorf("creating table: %w", err)
@@ -125,25 +102,61 @@ func New(db *sql.DB) (AppDatabase, error) {
 
 	//Photo table
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS photos (
-		user_id TEXT,
-		binary_file TEXT,
-		photos_id TEXT,
-		url TEXT,
-		timestamp DATETIME,
-		likes_number INTEGER
-		comments TEXT
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		url TEXT NOT NULL,
+		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id)
 	)`)
 	if err != nil {
 		return nil, fmt.Errorf("creating table: %w", err)
 	}
 
 	//Comment table
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS comment (
-		comment_id TEXT,
-		user_id TEXT,
-		photos_id TEXT,
-		comment_url TEXT,
-		text_comment TEXT
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS comments (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		photo_id INTEGER NOT NULL,
+		text TEXT NOT NULL,
+		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id),
+		FOREIGN KEY (photo_id) REFERENCES photos(id)
+	)`)
+	if err != nil {
+		return nil, fmt.Errorf("creating table: %w", err)
+	}
+
+	//Like table
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS likes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		photo_id INTEGER NOT NULL,
+		FOREIGN KEY (user_id) REFERENCES users(id),
+		FOREIGN KEY (photo_id) REFERENCES photos(id)
+	)`)
+	if err != nil {
+		return nil, fmt.Errorf("creating table: %w", err)
+	}
+
+	//followers table
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS followers (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		follower_id INTEGER NOT NULL,
+		followed_id INTEGER NOT NULL,
+		FOREIGN KEY (follower_id) REFERENCES users(id),
+		FOREIGN KEY (followed_id) REFERENCES users(id)
+	)`)
+	if err != nil {
+		return nil, fmt.Errorf("creating table: %w", err)
+	}
+
+	//bans table
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS bans (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		banned_id INTEGER NOT NULL,
+		FOREIGN KEY (user_id) REFERENCES users(id),
+		FOREIGN KEY (banned_id) REFERENCES users(id)
 	)`)
 	if err != nil {
 		return nil, fmt.Errorf("creating table: %w", err)

@@ -1,41 +1,39 @@
 package database
 
-type UserDetails struct {
+type User struct {
+	ID       int    `json:"id"`
 	Username string `json:"username"`
 }
 
-type Identifier struct {
-	Username  string `json:"username"`
-	UserId    string `json:"user_id"`
-	IsNewUser bool   `json:"is_new_user"`
-}
-
-type UserProfile struct {
-	Username       string   `json:"username"`
-	UserId         string   `json:"user_id"`
-	FollowerCount  int      `json:"follower_count"`
-	Followers      []string `json:"followers"`
-	FollowingCount int      `json:"following_count"`
-	Follows        []string `json:"follows"`
-	Photos         []string `json:"photos"`
-	PhotosCount    int      `json:"photos_count"`
-	BannedUser     []string `json:"banned_user"`
-}
-
 type Photo struct {
-	UserID      string   `json:"user_id"`
-	BinaryFile  string   `json:"binary_file"`
-	PhotosId    string   `json:"photos_id"`
-	Url         string   `json:"url"`
-	Timestamp   string   `json:"timestamp"`
-	LikesNumber int      `json:"likes_number"`
-	Comments    []string `json:"comments"`
+	ID        int    `json:"id"`
+	UserID    int    `json:"user_id"`
+	URL       string `json:"url"`
+	Timestamp string `json:"timestamp"`
+}
+
+type Like struct {
+	ID      int `json:"id"`
+	UserID  int `json:"user_id"`
+	PhotoID int `json:"photo_id"`
 }
 
 type Comment struct {
-	UserId     string `json:"user_id"`
-	PhotosId   string `json:"photos_id"`
-	CommentId  string `json:"comment_id"`
-	CommentUrl string `json:"comment_url"`
-	Text       string `json:"text_comment"`
+	ID        int    `json:"id"`
+	UserId    int    `json:"user_id"`
+	PhotoId   int    `json:"photo_id"`
+	Text      string `json:"text"`
+	Timestamp string `json:"timestamp"`
+}
+
+type Follower struct {
+	ID         int `json:"id"`
+	FollowerID int `json:"follower_id"`
+	FollowedID int `json:"followed_id"`
+}
+
+type Ban struct {
+	ID       int `json:"id"`
+	UserID   int `json:"user_id"`
+	BannedID int `json:"banned_id"`
 }
