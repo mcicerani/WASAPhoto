@@ -2,51 +2,31 @@ package database
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
+
+	"github.com/mattn/go-sqlite3"
 )
 
-/*generateUniqueUserID genera un UserId unico per ogni utente incrementando l'ultimo id generato di 1 l'ultimo id generato.
-inizialmente l'ultimo id generato è 0 */
-func (a *appdbimpl) generateUniqueUserID() (string, error) {
-	var lastID int
-	err := a.c.QueryRow(`SELECT MAX(CAST(user_id AS INTEGER)) FROM identifier`).Scan(&lastID)
-
-	//se non ci sono user_id nel database ritorna 0
-	if err != nil {
-		return "0", nil
-	}
-
-	return strconv.Itoa(lastID + 1), nil
-}
-
-// SetUser crea nuovo user nel database per le tabelle UserDetails, Identifier(attribuendo UserId unico stringa) e UserProfile
+// SetUser crea nuovo user nel database
 func (a *appdbimpl) SetUser(name string) error {
-	_, err := a.c.Exec(`INSERT INTO user_details (username) VALUES (?)`, name)
+
+	_, err := a.c.Exec(`INSERT INTO users (username) VALUES (?)`, name)
 	if err != nil {
+		// Controlla se l'errore è dovuto alla violazione del vincolo UNIQUE
+		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
+			return errors.New("username already exists")
+		}
 		return fmt.Errorf("inserting user: %w", err)
 	}
-
-	// Generate a unique user ID
-	userID, _ := a.generateUniqueUserID()
-
-	_, err = a.c.Exec(`INSERT INTO identifier (user_id, is_new_user) VALUES (?, ?)`, userID, true)
-	if err != nil {
-		return fmt.Errorf("inserting identifier: %w", err)
-	}
-
-	_, err = a.c.Exec(`INSERT INTO user_profile (username, user_id, follower_count, followers, following_count, follows, photos, photos_count, banned_user) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, name, "", 0, "", 0, "", "", 0, "")
-	if err != nil {
-		return fmt.Errorf("inserting user_profile: %w", err)
-	}
-
 	return nil
 }
 
-// GetUserByUsername restituisce i dettagli dell'user in user_profile con username=name
-func (a *appdbimpl) GetUserByUsername(name string) (UserProfile, error) {
-	var user UserProfile
-	err := a.c.QueryRow(`SELECT * FROM user_profile WHERE username = ?`, name).Scan(&user.Username, &user.UserId, &user.FollowerCount, &user.Followers, &user.FollowingCount, &user.Follows, &user.PhotosCount, &user.BannedUser)
+// GetUserByUsername restituisce i dettagli dell'user in users con username=name
+func (a *appdbimpl) GetUserByUsername(name string) (User, error) {
+	var user User
+	err := a.c.QueryRow(`SELECT * FROM users WHERE username = ?`, name).Scan(&user.Username, &user.ID)
 	if err != nil {
 		return user, fmt.Errorf("selecting user: %w", err)
 	}
@@ -54,53 +34,37 @@ func (a *appdbimpl) GetUserByUsername(name string) (UserProfile, error) {
 	return user, nil
 }
 
-//GetUserById restituisce i dettagli dell'user in user_profile con UserId=id
-func (a *appdbimpl) GetUserById(id string) (UserProfile, error) {
-	var user UserProfile
-	err := a.c.QueryRow(`SELECT * FROM user_profile WHERE user_id = ?`, id).Scan(&user.Username, &user.UserId, &user.FollowerCount, &user.Followers, &user.FollowingCount, &user.Follows, &user.Photos, &user.PhotosCount, &user.BannedUser)
+// GetUserById restituisce i dettagli dell'user in user_profile con UserId=id
+func (a *appdbimpl) GetUserById(id string) (User, error) {
+	var user User
+
+	userID, err := strconv.Atoi(id)
+	if err != nil {
+		return user, fmt.Errorf("converting user ID to integer: %w", err)
+	}
+
+	err = a.c.QueryRow(`SELECT * FROM users WHERE user_id = ?`, userID).Scan(&user.Username, &user.ID)
 	if err != nil {
 		return user, fmt.Errorf("selecting user: %w", err)
 	}
-
 	return user, nil
 }
 
-// DeleteUser elimina l'user con username e userId dalle tabelle UserDetails, Identifier e UserProfile
-func (a *appdbimpl) DeleteUser(name string, id string) error {
-	_, err := a.c.Exec(`DELETE FROM user_details WHERE username = ?`, name)
+// DeleteUser elimina l'user con username e userId dalle tabelle UserDetails, Identifier e User
+func (a *appdbimpl) DeleteUser(username string) error {
+	_, err := a.c.Exec(`DELETE FROM users WHERE username = ?`, username)
 	if err != nil {
 		return fmt.Errorf("deleting user: %w", err)
 	}
-
-	_, err = a.c.Exec(`DELETE FROM identifier WHERE user_id = ?`, id)
-	if err != nil {
-		return fmt.Errorf("deleting identifier: %w", err)
-	}
-
-	_, err = a.c.Exec(`DELETE FROM user_profile WHERE user_id = ?`, id)
-	if err != nil {
-		return fmt.Errorf("deleting user_profile: %w", err)
-	}
-
 	return nil
 }
 
-// UpdateUsername  cambia username dell'user con username=name e userid=id controllando prima il corrispondente id in identifier e user_profile e infine aggiornando il campo username in user_details
+// ------> UpdateUsername  cambia username dell'user con username=name e userid=id controllando prima il corrispondente id in identifier e user_profile e infine aggiornando il campo username in user_details
 func (a *appdbimpl) UpdateUsername(name string, id string, newname string) error {
-	var user Identifier
+	var user User
 	err := a.c.QueryRow(`SELECT * FROM identifier WHERE user_id = ?`, id).Scan(&user.Username, &user.UserId, &user.IsNewUser)
 	if err != nil {
 		return fmt.Errorf("selecting user: %w", err)
-	}
-
-	_, err = a.c.Exec(`UPDATE user_details SET username = ? WHERE username = ?`, newname, name)
-	if err != nil {
-		return fmt.Errorf("updating user_details: %w", err)
-	}
-
-	_, err = a.c.Exec(`UPDATE user_profile SET username = ? WHERE username = ?`, newname, name)
-	if err != nil {
-		return fmt.Errorf("updating user_profile: %w", err)
 	}
 
 	return nil
@@ -225,15 +189,15 @@ func (a *appdbimpl) UnfollowUser(UserID string, followedUserID string) error {
 }
 
 // GetFollowersByUserID restituisce i dettagli dei followers in user_profile userid=id
-func (a *appdbimpl) GetFollowersByUserID(userID string) ([]UserProfile, error) {
+func (a *appdbimpl) GetFollowersByUserID(userID string) ([]User, error) {
 	rows, err := a.c.Query(`SELECT * FROM user_profile WHERE user_id = ?`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("selecting followers: %w", err)
 	}
 
-	var followers []UserProfile
+	var followers []User
 	for rows.Next() {
-		var follower UserProfile
+		var follower User
 		err := rows.Scan(&follower.Username, &follower.UserId, &follower.FollowerCount, &follower.Followers, &follower.FollowingCount, &follower.Follows, &follower.Photos, &follower.PhotosCount, &follower.BannedUser)
 		if err != nil {
 			return nil, fmt.Errorf("scanning followers: %w", err)
@@ -244,15 +208,15 @@ func (a *appdbimpl) GetFollowersByUserID(userID string) ([]UserProfile, error) {
 }
 
 // GetFollowsByUserID restituisce i dettagli dei follows in user_profile con username=name
-func (a *appdbimpl) GetFollowsByUserID(userID string) ([]UserProfile, error) {
+func (a *appdbimpl) GetFollowsByUserID(userID string) ([]User, error) {
 	rows, err := a.c.Query(`SELECT * FROM user_profile WHERE user_id = ?`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("selecting follows: %w", err)
 	}
 
-	var follows []UserProfile
+	var follows []User
 	for rows.Next() {
-		var follow UserProfile
+		var follow User
 		err := rows.Scan(&follow.Username, &follow.UserId, &follow.FollowerCount, &follow.Followers, &follow.FollowingCount, &follow.Follows, &follow.Photos, &follow.PhotosCount, &follow.BannedUser)
 		if err != nil {
 			return nil, fmt.Errorf("scanning follows: %w", err)
@@ -273,7 +237,7 @@ func (a *appdbimpl) BanUser(userID string, bannedUserID string) error {
 
 // UnbanUser  rimuove dalla lista dei ban l'utente da seguire
 func (a *appdbimpl) UnbanUser(userID string, bannedUserID string) error {
-	
+
 	//Ricava la lista banned_user corrente come json
 	var bannedUsersJSON string
 	err := a.c.QueryRow("SELECT banned_user FROM user_profile WHERE user_id = ?", userID).Scan(&bannedUsersJSON)
