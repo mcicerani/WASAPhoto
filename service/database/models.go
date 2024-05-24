@@ -19,11 +19,11 @@ type Like struct {
 }
 
 type Comment struct {
-	ID        int    `json:"id"`
-	UserId    int    `json:"user_id"`
-	PhotoId   int    `json:"photo_id"`
-	Text      string `json:"text"`
-	Timestamp string `json:"timestamp"`
+	ID          int    `json:"id"`
+	UserId      int    `json:"user_id"`
+	PhotoId     int    `json:"photo_id"`
+	CommentText string `json:"comment_text"`
+	Timestamp   string `json:"timestamp"`
 }
 
 type Follower struct {

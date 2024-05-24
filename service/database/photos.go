@@ -2,105 +2,136 @@ package database
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 )
 
-// genera id unico per foto e commenti
-func (a *appdbimpl) generateUniquePhotoID(userId string) (string, error) {
-	//prendo l'ultimo id generato
-	var lastID int
-	err := a.c.QueryRow(`SELECT MAX(CAST(photos_id AS INTEGER)) FROM photos WHERE user_id = ?`, userId).Scan(&lastID)
+/*SetPhoto salva la foto in locale e inserisce dati in photos (id, user_id, url, timestamp) */
+
+func (a *appdbimpl) SetPhoto(userID string, url string) error {
+
+	UserID, err := strconv.Atoi(userID)
 	if err != nil {
-		return "", fmt.Errorf("selecting last photo id: %w", err)
+		return fmt.Errorf("converting user ID to integer: %w", err)
 	}
-	//incremento l'ultimo id generato di 1
-	return strconv.Itoa(lastID + 1), nil
-}
 
-func (a *appdbimpl) generateUniqueCommentID(userId string, photosId string) (string, error) {
-	//prendo l'ultimo id generato
-	var lastID int
-	err := a.c.QueryRow(`SELECT MAX(CAST(comment_id AS INTEGER)) FROM comment WHERE user_id = ? AND photos_id = ?`, userId, photosId).Scan(&lastID)
-	if err != nil {
-		return "", fmt.Errorf("selecting last comment id: %w", err)
-	}
-	//incremento l'ultimo id generato di 1
-	return strconv.Itoa(lastID + 1), nil
-}
-
-// genera timestamp per foto
-
-func generateTimestamp() string {
-	return time.Now().Format(time.RFC3339)
-}
-
-/*SetPhoto inserisce una nuova foto nel database nella tabella photos e ne
-inizializza url generando un id unico per la foto*/
-
-func (a *appdbimpl) SetPhoto(userID string, binaryFile string) error {
-	photoID, _ := a.generateUniquePhotoID(userID)
-	url := "users/userID/photos/" + photoID
-	timestamp := generateTimestamp()
-	_, err := a.c.Exec(`INSERT INTO photos (user_id, binary_file, photos_id, url, timestamp, likes_number, comments) VALUES (?, ?, ?, ?, ?, ?)`, userID, binaryFile, photoID, url, timestamp, 0, []string{})
+	_, err = a.c.Exec(`INSERT INTO photos (user_id, url) VALUES (?, ?)`, UserID, url)
 	if err != nil {
 		return fmt.Errorf("inserting photo: %w", err)
 	}
+
 	return nil
 }
 
 // GetPhotoByID restituisce i dettagli della foto in photos con photos_id=id
-func (a *appdbimpl) GetPhotoByID(userId string, photoID string) (Photo, error) {
+func (a *appdbimpl) GetPhotoByID(photoID string) (Photo, error) {
+
 	var photo Photo
-	err := a.c.QueryRow(`SELECT * FROM photos WHERE user_id = ? AND photos_id = ?`, userId, photoID).Scan(&photo.UserID, &photo.BinaryFile, &photo.PhotosId, &photo.Url, &photo.Timestamp, &photo.LikesNumber, &photo.Comments)
+
+	PhotoID, err := strconv.Atoi(photoID)
+	if err != nil {
+		return photo, fmt.Errorf("converting photo ID to integer: %w", err)
+	}
+
+	err = a.c.QueryRow(`SELECT * FROM photos WHERE id = ?`, PhotoID).Scan(&photo.ID, &photo.UserID, &photo.URL, &photo.Timestamp)
 	if err != nil {
 		return photo, fmt.Errorf("selecting photo: %w", err)
 	}
+
 	return photo, nil
 }
 
 // DeletePhoto elimina la foto con photos_id=id dalla tabella photos
-func (a *appdbimpl) DeletePhoto(userId string, photoID string) error {
-	_, err := a.c.Exec(`DELETE FROM photos WHERE user_id = ? AND photos_id = ?`, userId, photoID)
+func (a *appdbimpl) DeletePhoto(photoID string) error {
+
+	PhotoID, err := strconv.Atoi(photoID)
+	if err != nil {
+		return fmt.Errorf("converting photo ID to integer: %w", err)
+	}
+
+	_, err = a.c.Exec(`DELETE FROM photos WHERE id = ?`, PhotoID)
 	if err != nil {
 		return fmt.Errorf("deleting photo: %w", err)
 	}
+
+	_, err = a.c.Exec(`DELETE FROM comments WHERE photo_id = ?`, PhotoID)
+	if err != nil {
+		return fmt.Errorf("deleting comments: %w", err)
+	}
+
+	_, err = a.c.Exec(`DELETE FROM likes WHERE photo_id = ?`, PhotoID)
+	if err != nil {
+		return fmt.Errorf("deleting likes: %w", err)
+	}
+
 	return nil
 }
 
 // SetComment inserisce un nuovo commento nel database nella tabella comment
-func (a *appdbimpl) SetComment(userId string, photoID string, text string) error {
-	commentID, _ := a.generateUniqueCommentID(userId, photoID)
-	url := "users/userID/photos/" + photoID + "/comments/" + commentID
-	_, err := a.c.Exec(`INSERT INTO comment (user_id, photos_id, comment_id, comment_url, text_comment) VALUES (?, ?, ?, ?, ?)`, userId, photoID, commentID, url, text)
+func (a *appdbimpl) SetComment(userID string, photoID string, comment string) error {
+
+	UserID, err := strconv.Atoi(userID)
+	if err != nil {
+		return fmt.Errorf("converting user ID to integer: %w", err)
+	}
+
+	PhotoID, err := strconv.Atoi(photoID)
+	if err != nil {
+		return fmt.Errorf("converting photo ID to integer: %w", err)
+	}
+
+	_, err = a.c.Exec(`INSERT INTO comments (user_id, photo_id, comment_text) VALUES (?, ?, ?)`, UserID, PhotoID, comment)
 	if err != nil {
 		return fmt.Errorf("inserting comment: %w", err)
 	}
+
 	return nil
 }
 
 // GetCommentByID restituisce i dettagli del commento in comment con comment_id=id
-func (a *appdbimpl) GetCommentByID(userId string, photoID string, commentID string) (Comment, error) {
+func (a *appdbimpl) GetCommentByID(commentID string) (Comment, error) {
+
 	var comment Comment
-	err := a.c.QueryRow(`SELECT * FROM comment WHERE user_id = ? AND photos_id = ? AND comment_id = ?`, userId, photoID, commentID).Scan(&comment.UserId, &comment.PhotosId, &comment.CommentId, &comment.Text)
+
+	CommentID, err := strconv.Atoi(commentID)
+	if err != nil {
+		return comment, fmt.Errorf("converting comment ID to integer: %w", err)
+	}
+
+	err = a.c.QueryRow(`SELECT * FROM comments WHERE id = ?`, CommentID).Scan(&comment.ID, &comment.UserId, &comment.PhotoId, &comment.CommentText, &comment.Timestamp)
 	if err != nil {
 		return comment, fmt.Errorf("selecting comment: %w", err)
 	}
+
 	return comment, nil
 }
 
 // DeleteComment elimina il commento con comment_id=id dalla tabella comment
-func (a *appdbimpl) DeleteComment(userId string, photoID string, commentID string) error {
-	_, err := a.c.Exec(`DELETE FROM comment WHERE user_id = ? AND photos_id = ? AND comment_id = ?`, userId, photoID, commentID)
+func (a *appdbimpl) DeleteComment(commentID string) error {
+
+	CommentID, err := strconv.Atoi(commentID)
+	if err != nil {
+		return fmt.Errorf("converting comment ID to integer: %w", err)
+	}
+
+	_, err = a.c.Exec(`DELETE FROM comments WHERE id = ?`, CommentID)
 	if err != nil {
 		return fmt.Errorf("deleting comment: %w", err)
 	}
+
 	return nil
 }
 
 // GetCommentsByPhotoID restituisce i dettagli dei commenti in comment con photos_id=id
-func (a *appdbimpl) GetCommentsByPhotoID(userId string, photoID string) ([]Comment, error) {
-	rows, err := a.c.Query(`SELECT * FROM comment WHERE user_id = ? AND photos_id = ?`, userId, photoID)
+func (a *appdbimpl) GetCommentsByPhotoID(photoID string) ([]Comment, error) {
+
+	PhotoID, err := strconv.Atoi(photoID)
+	if err != nil {
+		return nil, fmt.Errorf("converting photo ID to integer: %w", err)
+	}
+
+	rows, err := a.c.Query(`SELECT * FROM comments WHERE photo_id = ?`, PhotoID)
 	if err != nil {
 		return nil, fmt.Errorf("selecting comments: %w", err)
 	}
@@ -108,98 +139,219 @@ func (a *appdbimpl) GetCommentsByPhotoID(userId string, photoID string) ([]Comme
 	var comments []Comment
 	for rows.Next() {
 		var comment Comment
-		err := rows.Scan(&comment.UserId, &comment.PhotosId, &comment.CommentId, &comment.Text)
+		err = rows.Scan(&comment.ID, &comment.UserId, &comment.PhotoId, &comment.CommentText, &comment.Timestamp)
 		if err != nil {
-			return nil, fmt.Errorf("scanning comments: %w", err)
+			return nil, fmt.Errorf("scanning comment: %w", err)
 		}
+
 		comments = append(comments, comment)
 	}
+
 	return comments, nil
 }
 
 // GetPhotosByUserID restituisce i dettagli delle foto in photos con user_id=id
 func (a *appdbimpl) GetPhotosByUserID(userId string) ([]Photo, error) {
-	rows, err := a.c.Query(`SELECT * FROM photos WHERE user_id = ?`, userId)
+
+	UserID, err := strconv.Atoi(userId)
+	if err != nil {
+		return nil, fmt.Errorf("converting user ID to integer: %w", err)
+	}
+
+	rows, err := a.c.Query(`SELECT * FROM photos WHERE user_id = ?`, UserID)
 	if err != nil {
 		return nil, fmt.Errorf("selecting photos: %w", err)
 	}
 
 	var photos []Photo
+
 	for rows.Next() {
 		var photo Photo
-		err := rows.Scan(&photo.UserID, &photo.BinaryFile, &photo.PhotosId, &photo.Url, &photo.Timestamp, &photo.LikesNumber, &photo.Comments)
+		err = rows.Scan(&photo.ID, &photo.UserID, &photo.URL, &photo.Timestamp)
 		if err != nil {
-			return nil, fmt.Errorf("scanning photos: %w", err)
+			return nil, fmt.Errorf("scanning photo: %w", err)
 		}
+
 		photos = append(photos, photo)
 	}
+
 	return photos, nil
 }
 
 // SetLike incrementa il numero di like di una foto
 func (a *appdbimpl) SetLike(userId string, photoID string) error {
-	photo, err := a.GetPhotoByID(userId, photoID)
+
+	UserID, err := strconv.Atoi(userId)
 	if err != nil {
-		return fmt.Errorf("getting photo: %w", err)
+		return fmt.Errorf("converting user ID to integer: %w", err)
+
 	}
-	photo.LikesNumber++
-	_, err = a.c.Exec(`UPDATE photos SET likes_number = ? WHERE user_id = ? AND photos_id = ?`, photo.LikesNumber, userId, photoID)
+
+	PhotoID, err := strconv.Atoi(photoID)
 	if err != nil {
-		return fmt.Errorf("updating photo: %w", err)
+		return fmt.Errorf("converting photo ID to integer: %w", err)
 	}
+
+	_, err = a.c.Exec(`INSERT INTO likes (user_id, photo_id) VALUES (?, ?)`, UserID, PhotoID)
+	if err != nil {
+		return fmt.Errorf("inserting like: %w", err)
+	}
+
 	return nil
 }
 
 // DeleteLike decrementa il numero di like di una foto
-func (a *appdbimpl) DeleteLike(userId string, photoID string) error {
-	photo, err := a.GetPhotoByID(userId, photoID)
+func (a *appdbimpl) DeleteLike(likeID string) error {
+
+	LikeID, err := strconv.Atoi(likeID)
 	if err != nil {
-		return fmt.Errorf("getting photo: %w", err)
+		return fmt.Errorf("converting like ID to integer: %w", err)
 	}
-	photo.LikesNumber--
-	_, err = a.c.Exec(`UPDATE photos SET likes_number = ? WHERE user_id = ? AND photos_id = ?`, photo.LikesNumber, userId, photoID)
+
+	_, err = a.c.Exec(`DELETE FROM likes WHERE id = ?`, LikeID)
 	if err != nil {
-		return fmt.Errorf("updating photo: %w", err)
+		return fmt.Errorf("deleting like: %w", err)
 	}
+
 	return nil
 }
 
 // GetLikesByPhotoID restituisce il numero di like di una foto
-func (a *appdbimpl) GetLikesByPhotoID(userId string, photoID string) (int, error) {
-	photo, err := a.GetPhotoByID(userId, photoID)
+func (a *appdbimpl) GetLikesByPhotoID(photoID string) ([]Like, error) {
+
+	PhotoID, err := strconv.Atoi(photoID)
 	if err != nil {
-		return 0, fmt.Errorf("getting photo: %w", err)
+		return nil, fmt.Errorf("converting photo ID to integer: %w", err)
 	}
-	return photo.LikesNumber, nil
+
+	rows, err := a.c.Query(`SELECT * FROM likes WHERE photo_id = ?`, PhotoID)
+	if err != nil {
+		return nil, fmt.Errorf("selecting likes: %w", err)
+	}
+
+	var likes []Like
+	for rows.Next() {
+		var like Like
+		err = rows.Scan(&like.ID, &like.UserID, &like.PhotoID)
+		if err != nil {
+			return nil, fmt.Errorf("scanning like: %w", err)
+		}
+
+		likes = append(likes, like)
+	}
+
+	return likes, nil
 }
 
-// GetPhotosStreamByUserID restituisce lista foto di tutti account seguiti da userID in ordine cronologico inverso
+// GetPhotosStreamByUserID restituisce lista foto in ordine cronologico inverso di tutti account seguiti da userID
 func (a *appdbimpl) GetPhotosStreamByUserID(userID string) ([]Photo, error) {
 
-	//ottengo lista follower da cui poi prendere le foto da mettere nella lista stream
-	followers, err := a.GetFollowersByUserID(userID)
+	follows, err := a.GetFollows(userID)
+
 	if err != nil {
-		return nil, fmt.Errorf("getting followers: %w", err)
+		return nil, fmt.Errorf("getting follows: %w", err)
 	}
 
-	// prendo le foto di tutti gli utenti seguiti e le ordino per timestamp
 	var photos []Photo
-	for _, follower := range followers {
-		followerPhotos, err := a.GetPhotosByUserID(follower.UserId)
+	for _, follow := range follows {
+		rows, err := a.c.Query(`SELECT * FROM photos WHERE user_id = ?`, follow.ID)
 		if err != nil {
-			return nil, fmt.Errorf("getting photos: %w", err)
+			return nil, fmt.Errorf("selecting photos: %w", err)
 		}
-		photos = append(photos, followerPhotos...)
-	}
 
-	// ordino le foto per timestamp
-	for i := 0; i < len(photos); i++ {
-		for j := i + 1; j < len(photos); j++ {
-			if photos[i].Timestamp < photos[j].Timestamp {
-				photos[i], photos[j] = photos[j], photos[i]
+		for rows.Next() {
+			var photo Photo
+			err = rows.Scan(&photo.ID, &photo.UserID, &photo.URL, &photo.Timestamp)
+			if err != nil {
+				return nil, fmt.Errorf("scanning photo: %w", err)
 			}
+
+			photos = append(photos, photo)
 		}
+
+		sort.Slice(photos, func(i, j int) bool {
+			t1, _ := time.Parse(time.RFC3339, photos[i].Timestamp)
+			t2, _ := time.Parse(time.RFC3339, photos[j].Timestamp)
+			return t2.Before(t1)
+		})
+
 	}
 
 	return photos, nil
+}
+
+//CountLikesByPhotoID restituisce il numero di like di una foto
+
+func (a *appdbimpl) CountLikesByPhotoID(photoID string) (int, error) {
+
+	PhotoID, err := strconv.Atoi(photoID)
+	if err != nil {
+		return 0, fmt.Errorf("converting photo ID to integer: %w", err)
+	}
+
+	rows, err := a.c.Query(`SELECT COUNT(*) FROM likes WHERE photo_id = ?`, PhotoID)
+	if err != nil {
+		return 0, fmt.Errorf("selecting likes: %w", err)
+	}
+
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return 0, fmt.Errorf("scanning like: %w", err)
+		}
+	}
+
+	return count, nil
+}
+
+//CountCommentsByPhotoID restituisce il numero di commenti di una foto
+
+func (a *appdbimpl) CountCommentsByPhotoID(photoID string) (int, error) {
+	
+	PhotoID, err := strconv.Atoi(photoID)
+	if err != nil {
+		return 0, fmt.Errorf("converting photo ID to integer: %w", err)
+	}
+
+	rows, err := a.c.Query(`SELECT COUNT(*) FROM comments WHERE photo_id = ?`, PhotoID)
+	if err != nil {
+		return 0, fmt.Errorf("selecting comments: %w", err)
+	}
+
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return 0, fmt.Errorf("scanning comment: %w", err)
+		}
+	}
+
+	return count, nil
+}
+
+
+// CountPhotosByUserID restituisce il numero di foto di un utente
+
+func (a *appdbimpl) CountPhotosByUserID(userID string) (int, error) {
+	
+	UserID, err := strconv.Atoi(userID)
+	if err != nil {
+		return 0, fmt.Errorf("converting user ID to integer: %w", err)
+	}
+
+	rows, err := a.c.Query(`SELECT COUNT(*) FROM photos WHERE user_id = ?`, UserID)
+	if err != nil {
+		return 0, fmt.Errorf("selecting photos: %w", err)
+	}
+
+	var count int
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return 0, fmt.Errorf("scanning photo: %w", err)
+		}
+	}
+
+	return count, nil
 }

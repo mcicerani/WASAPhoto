@@ -41,32 +41,34 @@ type AppDatabase interface {
 
 	//User
 
-	generateUniqueUserID() (string, error)
-	generateUniquePhotoID(userID string) (string, error)
-	generateUniqueCommentID(userID string, photoID string) (string, error)
 	SetUser(name string) error
-	UpdateUsername(name string, id string, newname string) error
+	UpdateUsername(ID string, newname string) error
 	GetUserByUsername(name string) (User, error)
-	GetUserById(id string) (User, error)
-	DeleteUser(name string, id string) error
-	FollowUser(userId string, followedUserID string) error
-	UnfollowUser(userId string, followedUserID string) error
-	GetFollowersByUserID(userId string) ([]User, error)
-	GetFollowsByUserID(userId string) ([]User, error)
-	BanUser(userId string, bannedUserID string) error
-	UnbanUser(userId string, bannedUserID string) error
-	SetPhoto(userId string, binaryFile string) error
-	GetPhotoByID(userId string, photoID string) (Photo, error)
-	DeletePhoto(userId string, photoID string) error
-	SetComment(userId string, photoID string, text string) error
-	GetCommentByID(userId string, photoID string, commentID string) (Comment, error)
-	DeleteComment(userId string, photoID string, commentID string) error
-	GetCommentsByPhotoID(userId string, photoID string) ([]Comment, error)
+	GetUserById(ID string) (User, error)
+	DeleteUser(username string) error
+	FollowUser(userID string, followedUserID string) error
+	UnfollowUser(userID string, followedUserID string) error
+	GetFollowers(userID string) ([]User, error)
+	GetFollows(userID string) ([]User, error)
+	BanUser(userID string, bannedUserID string) error
+	UnbanUser(userID string, bannedUserID string) error
+	CountFollowersByUserID(userID string) (int, error)
+	CountFollowsByUserID(userID string) (int, error)
+	SetPhoto(userId string, url string) error
+	GetPhotoByID(photoID string) (Photo, error)
+	DeletePhoto(photoID string) error
+	SetComment(userId string, photoID string, comment string) error
+	GetCommentByID(commentID string) (Comment, error)
+	DeleteComment(commentID string) error
+	GetCommentsByPhotoID(photoID string) ([]Comment, error)
 	GetPhotosByUserID(userId string) ([]Photo, error)
 	SetLike(userId string, photoID string) error
-	DeleteLike(userId string, photoID string) error
-	GetLikesByPhotoID(userId string, photoID string) (int, error)
+	DeleteLike(likeID string) error
+	GetLikesByPhotoID(photoID string) ([]Like, error)
 	GetPhotosStreamByUserID(userID string) ([]Photo, error)
+	CountCommentsByPhotoID(photoID string) (int, error)
+	CountLikesByPhotoID(photoID string) (int, error)
+	CountPhotosByUserID(userID string) (int, error)
 
 	//Ping checks if the database is reachable
 
@@ -117,7 +119,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,
 		photo_id INTEGER NOT NULL,
-		text TEXT NOT NULL,
+		comment_text TEXT NOT NULL,
 		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (user_id) REFERENCES users(id),
 		FOREIGN KEY (photo_id) REFERENCES photos(id)
