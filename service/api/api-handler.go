@@ -6,33 +6,28 @@ import (
 
 // Handler returns an instance of httprouter.Router that handle APIs registered here
 func (rt *_router) Handler() http.Handler {
-	// Register routes
-	rt.router.GET("/", rt.getHelloWorld)
-	rt.router.GET("/context", rt.wrap(rt.getContextReply))
-
-	// Special routes
-	rt.router.GET("/liveness", rt.liveness)
 
 	// Login routes
 	rt.router.POST("/session", rt.wrap(rt.doLogin))
 
 	// User routes
-	rt.router.GET("/users/", rt.wrap(rt.searchUser))
+	rt.router.GET("/users", rt.wrap(rt.searchUser))
 	rt.router.PUT("/users/:userId", rt.wrap(rt.setMyUsername))
 	rt.router.GET("/users/:userId", rt.wrap(rt.getUserProfile))
 	rt.router.GET("/users/:userId/stream", rt.wrap(rt.getMyStream))
 
 	// Photos routes
 	rt.router.POST("/users/:userId/photos", rt.wrap(rt.uploadPhoto))
-	rt.router.DELETE("/users/:userId/photos", rt.wrap(rt.deletePhoto))
+	rt.router.DELETE("/users/:userId/photos/:photosId", rt.wrap(rt.deletePhoto))
 
 	// Likes routes
 	rt.router.POST("/users/:userId/photos/:photosId/likes", rt.wrap(rt.likePhoto))
-	rt.router.DELETE("/users/:userId/photos/:photosId/likes", rt.wrap(rt.unlikePhoto))
+	rt.router.DELETE("/users/:userId/photos/:photosId/likes/:likesId", rt.wrap(rt.unlikePhoto))
 
 	// Comments routes
 	rt.router.POST("/users/:userId/photos/:photosId/comments", rt.wrap(rt.commentPhoto))
-	rt.router.DELETE("/users/:userId/photos/:photosId/comments", rt.wrap(rt.uncommentPhoto))
+	rt.router.POST("/users/:userId/photos/:photosId/comments", rt.wrap(rt.getPhotoComments))
+	rt.router.DELETE("/users/:userId/photos/:photosId/comments/:commentsId", rt.wrap(rt.uncommentPhoto))
 
 	// Follows routes
 	rt.router.GET("/users/:userId/follows", rt.wrap(rt.getUserfollows))

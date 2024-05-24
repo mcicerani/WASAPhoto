@@ -52,6 +52,7 @@ type AppDatabase interface {
 	GetFollows(userID string) ([]User, error)
 	BanUser(userID string, bannedUserID string) error
 	UnbanUser(userID string, bannedUserID string) error
+	IsBanned(userID string, otherUserID string) (bool, error)
 	CountFollowersByUserID(userID string) (int, error)
 	CountFollowsByUserID(userID string) (int, error)
 	SetPhoto(userId string, url string) error

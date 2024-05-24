@@ -18,7 +18,7 @@ info:
     A user can log in just by specifying the username.
   version: 1.0.0
 servers: 
-  - url: 'http://localhost:8080/api'
+  - url: 'http://localhost:3000'
 tags:
   - name: login
     description: Operation related to login

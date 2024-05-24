@@ -223,6 +223,31 @@ func (a *appdbimpl) UnbanUser(userID string, bannedUserID string) error {
 	return nil
 }
 
+//isBanned controlla se l'utente è stato bannato da un altro utente specifico e restituisce true o false
+
+func (a *appdbimpl) IsBanned(userID string, otherUserID string) (bool, error) {
+
+	UserID, err := strconv.Atoi(userID)
+	if err != nil {
+		return false, fmt.Errorf("converting user ID to integer: %w", err)
+	}
+
+	OtherUserID, err := strconv.Atoi(otherUserID)
+	if err != nil {
+		return false, fmt.Errorf("converting user ID to integer: %w", err)
+	}
+
+	var exists bool
+	err = a.c.QueryRow(`SELECT * FROM bans WHERE user_id = ? AND banned_id = ?`, OtherUserID, UserID).Scan(&exists)
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return false, nil
+		}
+		return false, fmt.Errorf("checking ban: %w", err)
+	}
+	return true, nil
+}
+
 //CountFollowersByUserID restituisce il numero di followers di un utente
 
 func (a *appdbimpl) CountFollowersByUserID(userID string) (int, error) {
