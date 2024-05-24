@@ -99,7 +99,7 @@ func (a *appdbimpl) GetCommentByID(commentID string) (Comment, error) {
 		return comment, fmt.Errorf("converting comment ID to integer: %w", err)
 	}
 
-	err = a.c.QueryRow(`SELECT * FROM comments WHERE id = ?`, CommentID).Scan(&comment.ID, &comment.UserId, &comment.PhotoId, &comment.CommentText, &comment.Timestamp)
+	err = a.c.QueryRow(`SELECT * FROM comments WHERE id = ?`, CommentID).Scan(&comment.ID, &comment.UserId, &comment.PhotoId, &comment.Text, &comment.Timestamp)
 	if err != nil {
 		return comment, fmt.Errorf("selecting comment: %w", err)
 	}
@@ -139,7 +139,7 @@ func (a *appdbimpl) GetCommentsByPhotoID(photoID string) ([]Comment, error) {
 	var comments []Comment
 	for rows.Next() {
 		var comment Comment
-		err = rows.Scan(&comment.ID, &comment.UserId, &comment.PhotoId, &comment.CommentText, &comment.Timestamp)
+		err = rows.Scan(&comment.ID, &comment.UserId, &comment.PhotoId, &comment.Text, &comment.Timestamp)
 		if err != nil {
 			return nil, fmt.Errorf("scanning comment: %w", err)
 		}
@@ -308,7 +308,7 @@ func (a *appdbimpl) CountLikesByPhotoID(photoID string) (int, error) {
 //CountCommentsByPhotoID restituisce il numero di commenti di una foto
 
 func (a *appdbimpl) CountCommentsByPhotoID(photoID string) (int, error) {
-	
+
 	PhotoID, err := strconv.Atoi(photoID)
 	if err != nil {
 		return 0, fmt.Errorf("converting photo ID to integer: %w", err)
@@ -330,11 +330,10 @@ func (a *appdbimpl) CountCommentsByPhotoID(photoID string) (int, error) {
 	return count, nil
 }
 
-
 // CountPhotosByUserID restituisce il numero di foto di un utente
 
 func (a *appdbimpl) CountPhotosByUserID(userID string) (int, error) {
-	
+
 	UserID, err := strconv.Atoi(userID)
 	if err != nil {
 		return 0, fmt.Errorf("converting user ID to integer: %w", err)
