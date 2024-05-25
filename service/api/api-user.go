@@ -312,7 +312,7 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 		return
 	}
 
-	//rimuove dai follow e followers
+	// rimuove dai follow e followers
 
 	err = ctx.Database.UnfollowUser(strconv.Itoa(ctx.User.ID), ps.ByName("bannedId"))
 	if err != nil {

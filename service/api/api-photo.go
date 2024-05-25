@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -56,7 +57,7 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	// Salvataggio della foto nel sistema di archiviazione locale
 
 	// Creare un nuovo file nel percorso di archiviazione locale
-	photoFile, err := os.Create(fmt.Sprintf("photos/%s", filename))
+	photoFile, err := os.Create(fmt.Sprintf("WASAphoto/photos/%s", filename))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -78,7 +79,7 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Costruire l'URL della foto utilizzando l'ID dell'utente e il timestamp
-	photoURL := fmt.Sprintf("WasaPhoto/Photo/%s", filename)
+	photoURL := fmt.Sprintf("WASAPhoto/photos/%s", filename)
 
 	// Inserire l'URL della foto nel database
 	err = ctx.Database.SetPhoto(userID, photoURL)
@@ -129,8 +130,11 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
+	// Ricavare il nome del file dall'URL della foto
+	fileName := filepath.Base(photo.URL)
+
 	// Eliminare la foto dal sistema di archiviazione locale
-	err = os.Remove(fmt.Sprintf("photos/%s", photoID))
+	err = os.Remove(fmt.Sprintf("WASAphoto/photos/%s", fileName))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
