@@ -1,7 +1,9 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"time"
@@ -125,7 +127,6 @@ func (a *appdbimpl) DeleteComment(commentID string) error {
 
 // GetCommentsByPhotoID restituisce i dettagli dei commenti in comment con photos_id=id
 func (a *appdbimpl) GetCommentsByPhotoID(photoID string) ([]Comment, error) {
-
 	PhotoID, err := strconv.Atoi(photoID)
 	if err != nil {
 		return nil, fmt.Errorf("converting photo ID to integer: %w", err)
@@ -135,6 +136,13 @@ func (a *appdbimpl) GetCommentsByPhotoID(photoID string) ([]Comment, error) {
 	if err != nil {
 		return nil, fmt.Errorf("selecting comments: %w", err)
 	}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+			return
+		}
+	}(rows) // Ensure rows are closed after function returns
 
 	var comments []Comment
 	for rows.Next() {
@@ -143,8 +151,12 @@ func (a *appdbimpl) GetCommentsByPhotoID(photoID string) ([]Comment, error) {
 		if err != nil {
 			return nil, fmt.Errorf("scanning comment: %w", err)
 		}
-
 		comments = append(comments, comment)
+	}
+
+	// Check for errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating rows: %w", err)
 	}
 
 	return comments, nil
@@ -163,6 +175,14 @@ func (a *appdbimpl) GetPhotosByUserID(userId string) ([]Photo, error) {
 		return nil, fmt.Errorf("selecting photos: %w", err)
 	}
 
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+			return
+		}
+	}(rows) // Ensure rows are closed after function returns
+
 	var photos []Photo
 
 	for rows.Next() {
@@ -173,6 +193,10 @@ func (a *appdbimpl) GetPhotosByUserID(userId string) ([]Photo, error) {
 		}
 
 		photos = append(photos, photo)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating rows: %w", err)
 	}
 
 	return photos, nil
@@ -229,6 +253,14 @@ func (a *appdbimpl) GetLikesByPhotoID(photoID string) ([]Like, error) {
 		return nil, fmt.Errorf("selecting likes: %w", err)
 	}
 
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+			return
+		}
+	}(rows) // Ensure rows are closed after function returns
+
 	var likes []Like
 	for rows.Next() {
 		var like Like
@@ -238,6 +270,11 @@ func (a *appdbimpl) GetLikesByPhotoID(photoID string) ([]Like, error) {
 		}
 
 		likes = append(likes, like)
+	}
+
+	// Check for errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating rows: %w", err)
 	}
 
 	return likes, nil
@@ -268,6 +305,19 @@ func (a *appdbimpl) GetPhotosStreamByUserID(userID string) ([]Photo, error) {
 
 			photos = append(photos, photo)
 		}
+		if err = rows.Err(); err != nil {
+			err := rows.Close()
+			if err != nil {
+				log.Println("Error closing rows:", err)
+				return nil, err
+			} // Close rows before returning
+			return nil, fmt.Errorf("iterating rows: %w", err)
+		}
+		// Close rows after iterating
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
 
 		sort.Slice(photos, func(i, j int) bool {
 			t1, _ := time.Parse(time.RFC3339, photos[i].Timestamp)
@@ -280,8 +330,7 @@ func (a *appdbimpl) GetPhotosStreamByUserID(userID string) ([]Photo, error) {
 	return photos, nil
 }
 
-//CountLikesByPhotoID restituisce il numero di like di una foto
-
+// CountLikesByPhotoID restituisce il numero di like di una foto
 func (a *appdbimpl) CountLikesByPhotoID(photoID string) (int, error) {
 
 	PhotoID, err := strconv.Atoi(photoID)
@@ -294,6 +343,14 @@ func (a *appdbimpl) CountLikesByPhotoID(photoID string) (int, error) {
 		return 0, fmt.Errorf("selecting likes: %w", err)
 	}
 
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+			return
+		}
+	}(rows) // Ensure rows are closed after function returns
+
 	var count int
 	for rows.Next() {
 		err = rows.Scan(&count)
@@ -302,10 +359,15 @@ func (a *appdbimpl) CountLikesByPhotoID(photoID string) (int, error) {
 		}
 	}
 
+	// Check for errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		return 0, fmt.Errorf("iterating rows: %w", err)
+	}
+
 	return count, nil
 }
 
-//CountCommentsByPhotoID restituisce il numero di commenti di una foto
+// CountCommentsByPhotoID restituisce il numero di commenti di una foto
 
 func (a *appdbimpl) CountCommentsByPhotoID(photoID string) (int, error) {
 
@@ -319,12 +381,25 @@ func (a *appdbimpl) CountCommentsByPhotoID(photoID string) (int, error) {
 		return 0, fmt.Errorf("selecting comments: %w", err)
 	}
 
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+			return
+		}
+	}(rows) // Ensure rows are closed after function returns
+
 	var count int
 	for rows.Next() {
 		err = rows.Scan(&count)
 		if err != nil {
 			return 0, fmt.Errorf("scanning comment: %w", err)
 		}
+	}
+
+	// Check for errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		return 0, fmt.Errorf("iterating rows: %w", err)
 	}
 
 	return count, nil
@@ -344,12 +419,25 @@ func (a *appdbimpl) CountPhotosByUserID(userID string) (int, error) {
 		return 0, fmt.Errorf("selecting photos: %w", err)
 	}
 
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+			return
+		}
+	}(rows) // Ensure rows are closed after function returns
+
 	var count int
 	for rows.Next() {
 		err = rows.Scan(&count)
 		if err != nil {
 			return 0, fmt.Errorf("scanning photo: %w", err)
 		}
+	}
+
+	// Check for errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		return 0, fmt.Errorf("iterating rows: %w", err)
 	}
 
 	return count, nil

@@ -39,7 +39,7 @@ import (
 // AppDatabase is the high level interface for the DB
 type AppDatabase interface {
 
-	//User
+	// User
 
 	SetUser(name string) error
 	UpdateUsername(ID string, newname string) error
@@ -71,7 +71,7 @@ type AppDatabase interface {
 	CountLikesByPhotoID(photoID string) (int, error)
 	CountPhotosByUserID(userID string) (int, error)
 
-	//Ping checks if the database is reachable
+	// Ping checks if the database is reachable
 
 	Ping() error
 }
@@ -94,7 +94,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 
 	// Create the tables if they don't exist
 
-	//User table
+	// User table
 	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		username TEXT NOT NULL UNIQUE
@@ -103,7 +103,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		return nil, fmt.Errorf("creating table: %w", err)
 	}
 
-	//Photo table
+	// Photo table
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS photos (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,
@@ -115,7 +115,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		return nil, fmt.Errorf("creating table: %w", err)
 	}
 
-	//Comment table
+	// Comment table
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS comments (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,
@@ -129,7 +129,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		return nil, fmt.Errorf("creating table: %w", err)
 	}
 
-	//Like table
+	// Like table
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS likes (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,
@@ -141,7 +141,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		return nil, fmt.Errorf("creating table: %w", err)
 	}
 
-	//followers table
+	// followers table
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS followers (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		follower_id INTEGER NOT NULL,
@@ -153,7 +153,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		return nil, fmt.Errorf("creating table: %w", err)
 	}
 
-	//bans table
+	// bans table
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS bans (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,

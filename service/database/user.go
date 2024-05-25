@@ -1,7 +1,9 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 	"strconv"
 )
 
@@ -32,10 +34,10 @@ func (a *appdbimpl) GetUserByUsername(name string) (User, error) {
 }
 
 // GetUserById restituisce i dettagli dell'user in user_profile con UserId=id
-func (a *appdbimpl) GetUserById(ID string) (User, error) {
+func (a *appdbimpl) GetUserById(iD string) (User, error) {
 	var user User
 
-	userID, err := strconv.Atoi(ID)
+	userID, err := strconv.Atoi(iD)
 	if err != nil {
 		return user, fmt.Errorf("converting user ID to integer: %w", err)
 	}
@@ -57,9 +59,9 @@ func (a *appdbimpl) DeleteUser(username string) error {
 }
 
 // UpdateUsername  cambia username dell'user con username=newname controllando prima il corrispondente id in users
-func (a *appdbimpl) UpdateUsername(ID string, newname string) error {
+func (a *appdbimpl) UpdateUsername(iD string, newname string) error {
 
-	userID, err := strconv.Atoi(ID)
+	userID, err := strconv.Atoi(iD)
 	if err != nil {
 		return fmt.Errorf("converting user ID to integer: %w", err)
 	}
@@ -128,6 +130,14 @@ func (a *appdbimpl) GetFollowers(userID string) ([]User, error) {
 		return followers, fmt.Errorf("selecting followers: %w", err)
 	}
 
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+			return
+		}
+	}(rows) // Ensure rows are closed after function returns
+
 	for rows.Next() {
 		var followerID int
 		err = rows.Scan(&followerID)
@@ -142,6 +152,11 @@ func (a *appdbimpl) GetFollowers(userID string) ([]User, error) {
 		}
 
 		followers = append(followers, follower)
+	}
+
+	// Check for errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating rows: %w", err)
 	}
 
 	return followers, nil
@@ -162,6 +177,14 @@ func (a *appdbimpl) GetFollows(userID string) ([]User, error) {
 		return follows, fmt.Errorf("selecting follows: %w", err)
 	}
 
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+			return
+		}
+	}(rows) // Ensure rows are closed after function returns
+
 	for rows.Next() {
 		var followedID int
 		err = rows.Scan(&followedID)
@@ -176,6 +199,11 @@ func (a *appdbimpl) GetFollows(userID string) ([]User, error) {
 		}
 
 		follows = append(follows, followed)
+	}
+
+	// Check for errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating rows: %w", err)
 	}
 
 	return follows, nil
@@ -223,8 +251,7 @@ func (a *appdbimpl) UnbanUser(userID string, bannedUserID string) error {
 	return nil
 }
 
-//isBanned controlla se l'utente è stato bannato da un altro utente specifico e restituisce true o false
-
+// IsBanned  controlla se l'utente è stato bannato da un altro utente specifico e restituisce true o false
 func (a *appdbimpl) IsBanned(userID string, otherUserID string) (bool, error) {
 
 	UserID, err := strconv.Atoi(userID)
@@ -248,8 +275,7 @@ func (a *appdbimpl) IsBanned(userID string, otherUserID string) (bool, error) {
 	return true, nil
 }
 
-//CountFollowersByUserID restituisce il numero di followers di un utente
-
+// CountFollowersByUserID restituisce il numero di followers di un utente
 func (a *appdbimpl) CountFollowersByUserID(userID string) (int, error) {
 
 	UserID, err := strconv.Atoi(userID)
@@ -262,6 +288,14 @@ func (a *appdbimpl) CountFollowersByUserID(userID string) (int, error) {
 		return 0, fmt.Errorf("selecting followers: %w", err)
 	}
 
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+			return
+		}
+	}(rows) // Ensure rows are closed after function returns
+
 	var count int
 	for rows.Next() {
 		err = rows.Scan(&count)
@@ -270,10 +304,15 @@ func (a *appdbimpl) CountFollowersByUserID(userID string) (int, error) {
 		}
 	}
 
+	// Check for errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		return 0, fmt.Errorf("iterating rows: %w", err)
+	}
+
 	return count, nil
 }
 
-//CountFollowsByUserID restituisce il numero di follows di un utente
+// CountFollowsByUserID restituisce il numero di follows di un utente
 
 func (a *appdbimpl) CountFollowsByUserID(userID string) (int, error) {
 
@@ -287,12 +326,25 @@ func (a *appdbimpl) CountFollowsByUserID(userID string) (int, error) {
 		return 0, fmt.Errorf("selecting follows: %w", err)
 	}
 
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+			return
+		}
+	}(rows) // Ensure rows are closed after function returns
+
 	var count int
 	for rows.Next() {
 		err = rows.Scan(&count)
 		if err != nil {
 			return 0, fmt.Errorf("scanning follow: %w", err)
 		}
+	}
+
+	// Check for errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		return 0, fmt.Errorf("iterating rows: %w", err)
 	}
 
 	return count, nil
