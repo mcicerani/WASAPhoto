@@ -195,3 +195,152 @@ func (rt *_router) getMyStream(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 }
+
+// followUserHandler segue un utente
+func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+
+	var loggedUser = ctx.User
+
+	if loggedUser.ID == 0 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	isBanned, err := ctx.Database.IsBanned(strconv.Itoa(loggedUser.ID), ps.ByName("followedId"))
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if isBanned {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	followedID := ps.ByName("followedId")
+	err = ctx.Database.FollowUser(strconv.Itoa(ctx.User.ID), followedID)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// unfollowUserHandler smette di seguire un utente
+func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+
+	if ctx.User.ID == 0 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	isBanned, err := ctx.Database.IsBanned(strconv.Itoa(ctx.User.ID), ps.ByName("followedId"))
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if isBanned {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	followedID := ps.ByName("followedId")
+	err = ctx.Database.UnfollowUser(strconv.Itoa(ctx.User.ID), followedID)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// getUserFollowsHandler ritorna gli utenti seguiti
+func (rt *_router) getUserFollows(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+
+	if ctx.User.ID == 0 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	Follows, err := ctx.Database.GetFollows(ps.ByName("userId"))
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(Follows)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+}
+
+// getUserFollowersHandler ritorna gli utenti che seguono
+func (rt *_router) getUserFollowers(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+
+	if ctx.User.ID == 0 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	Followers, err := ctx.Database.GetFollowers(ps.ByName("userId"))
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(Followers)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+}
+
+// banUserHandler banna un utente
+func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+
+	if ctx.User.ID == 0 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err := ctx.Database.BanUser(strconv.Itoa(ctx.User.ID), ps.ByName("bannedId"))
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	//rimuove dai follow e followers
+
+	err = ctx.Database.UnfollowUser(strconv.Itoa(ctx.User.ID), ps.ByName("bannedId"))
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	err = ctx.Database.UnfollowUser(ps.ByName("bannedId"), strconv.Itoa(ctx.User.ID))
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// unbanUserHandler rimuove il ban a un utente
+func (rt *_router) unbanUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+
+	if ctx.User.ID == 0 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err := ctx.Database.UnbanUser(strconv.Itoa(ctx.User.ID), ps.ByName("bannedId"))
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}

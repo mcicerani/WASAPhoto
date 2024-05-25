@@ -240,6 +240,24 @@ func (a *appdbimpl) DeleteLike(likeID string) error {
 	return nil
 }
 
+// GetLikeByID restituisce i dettagli del like in likes con like_id=id
+func (a *appdbimpl) GetLikeByID(likeID string) (Like, error) {
+
+	var like Like
+
+	LikeID, err := strconv.Atoi(likeID)
+	if err != nil {
+		return like, fmt.Errorf("converting like ID to integer: %w", err)
+	}
+
+	err = a.c.QueryRow(`SELECT * FROM likes WHERE id = ?`, LikeID).Scan(&like.ID, &like.UserID, &like.PhotoID)
+	if err != nil {
+		return like, fmt.Errorf("selecting like: %w", err)
+	}
+
+	return like, nil
+}
+
 // GetLikesByPhotoID restituisce il numero di like di una foto
 func (a *appdbimpl) GetLikesByPhotoID(photoID string) ([]Like, error) {
 

@@ -58,7 +58,7 @@ func (a *appdbimpl) DeleteUser(username string) error {
 	return nil
 }
 
-// UpdateUsername  cambia username dell'user con username=newname controllando prima il corrispondente id in users
+// UpdateUsername cambia username dell'user con username=newname controllando prima il corrispondente id in users
 func (a *appdbimpl) UpdateUsername(iD string, newname string) error {
 
 	userID, err := strconv.Atoi(iD)
@@ -209,7 +209,7 @@ func (a *appdbimpl) GetFollows(userID string) ([]User, error) {
 	return follows, nil
 }
 
-// BanUser  aggiunge alla lista dei ban l'utente da seguire
+// BanUser aggiunge alla lista dei ban l'utente da seguire
 func (a *appdbimpl) BanUser(userID string, bannedUserID string) error {
 
 	UserID, err := strconv.Atoi(userID)
@@ -230,7 +230,7 @@ func (a *appdbimpl) BanUser(userID string, bannedUserID string) error {
 	return nil
 }
 
-// UnbanUser  rimuove dalla lista dei ban l'utente da seguire
+// UnbanUser rimuove dalla lista dei ban l'utente da seguire
 func (a *appdbimpl) UnbanUser(userID string, bannedUserID string) error {
 
 	UserID, err := strconv.Atoi(userID)
@@ -251,7 +251,7 @@ func (a *appdbimpl) UnbanUser(userID string, bannedUserID string) error {
 	return nil
 }
 
-// IsBanned  controlla se l'utente è stato bannato da un altro utente specifico e restituisce true o false
+// IsBanned controlla se l'utente è stato bannato da un altro utente specifico e restituisce true o false
 func (a *appdbimpl) IsBanned(userID string, otherUserID string) (bool, error) {
 
 	UserID, err := strconv.Atoi(userID)

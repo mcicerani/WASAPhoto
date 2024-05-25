@@ -65,6 +65,7 @@ type AppDatabase interface {
 	GetPhotosByUserID(userId string) ([]Photo, error)
 	SetLike(userId string, photoID string) error
 	DeleteLike(likeID string) error
+	GetLikeByID(likeID string) (Like, error)
 	GetLikesByPhotoID(photoID string) ([]Like, error)
 	GetPhotosStreamByUserID(userID string) ([]Photo, error)
 	CountCommentsByPhotoID(photoID string) (int, error)

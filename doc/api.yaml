@@ -256,6 +256,30 @@ paths:
             Photo and his likes and comments deleted successfully
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+    get:
+      tags: ["photos"]
+      description: allows to get a photo
+      summary: Get a photo
+      operationId: getPhoto
+      responses:
+        "200":
+          description: successfully return photo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Photo'
+              examples:
+                example1:
+                  value:
+                    photosId: "abc123"
+                    url: "https://example.com/Users/{userId}/photos/{photosId}"
+                    timestamp: "2024-05-16T17:24:49.408Z"
+                    likes: ["1","32"]
+                    comments: [""]
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
+        "404":
+          $ref: '#/components/responses/UserNotFound'
 
 #-------Photo likes-------#
 
