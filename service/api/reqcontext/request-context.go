@@ -23,6 +23,6 @@ type RequestContext struct {
 	// Logger is a custom field logger for the request
 	Logger logrus.FieldLogger
 
-	//User is the user logged in that made the request
+	// User is the user logged in that made the request
 	User database.User
 }
