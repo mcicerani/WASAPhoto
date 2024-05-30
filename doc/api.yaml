@@ -90,8 +90,10 @@ paths:
 
 #-------Profile-------#
 
-  /users:
+  /users/search:
     get:
+      security:
+      - bearerAuth : []
       tags: ["search"]
       summary: Search user profile by username
       operationId: searchUser
@@ -107,10 +109,12 @@ paths:
           $ref: '#/components/responses/BannedUser'
         '404':
           $ref: '#/components/responses/UserNotFound'
-  /users/{userId}:
+  /users/{userId}/editProfile:
     parameters:
       - $ref: '#/components/parameters/userId'
     put:
+      security:
+      - bearerAuth : []
       tags: ["user"]
       description: allows to set a new username
       summary: Set a new Username
@@ -135,7 +139,13 @@ paths:
                    username: "Alessandro"
         "401":
           $ref: '#/components/responses/UnauthorizedError'
+  
+  /users/{userId}/profile:
+    parameters:
+    - $ref: '#/components/parameters/userId'
     get:
+      security:
+      - bearerAuth : []
       tags: ["user"]
       description: allows to get the profile of the logged user
       summary: Get user profile
@@ -166,6 +176,8 @@ paths:
     parameters:
       - $ref: '#/components/parameters/userId'
     get:
+      security:
+      - bearerAuth : []
       tags: ['stream']
       summary: Get my photos stream
       description: go to my personal stream of photos
@@ -205,6 +217,8 @@ paths:
     parameters:
       - $ref: '#/components/parameters/userId'
     post:
+      security:
+      - bearerAuth : []
       tags: ["photos"]
       description: allows to upload a new photo and return the id of the photos
       summary: Upload a new photo
@@ -246,6 +260,8 @@ paths:
       - $ref: '#/components/parameters/userId'    
       - $ref: '#/components/parameters/photosId'
     delete:
+      security:
+      - bearerAuth : []
       tags: ["photos"]
       summary: Delete a photo
       description: Deletes a photo belonging to the authenticated user.
@@ -257,6 +273,8 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
     get:
+      security:
+      - bearerAuth : []
       tags: ["photos"]
       description: allows to get a photo
       summary: Get a photo
@@ -288,6 +306,8 @@ paths:
       - $ref: '#/components/parameters/userId'
       - $ref: '#/components/parameters/photosId'
     post:
+      security:
+      - bearerAuth : []
       tags: ["likes"]
       description: allows to like photos
       summary: like photos
@@ -304,6 +324,8 @@ paths:
       - $ref: '#/components/parameters/photosId'
       - $ref: '#/components/parameters/likeId'
     delete:
+      security:
+      - bearerAuth : []
       tags: ["likes"]
       description: allows to unlike Photo
       summary: unlike photos
@@ -321,6 +343,8 @@ paths:
       - $ref: '#/components/parameters/userId'
       - $ref: '#/components/parameters/photosId'
     post:
+      security:
+      - bearerAuth : []
       tags: ["comments"]
       description: allows to comment photos
       summary: comment photos
@@ -340,6 +364,8 @@ paths:
         "401":
           $ref: '#/components/responses/UnauthorizedError'
     get:
+      security:
+      - bearerAuth : []
       tags: ["comments"]
       description: get comments on a photo
       summary: retrieve comments for a photo
@@ -381,6 +407,8 @@ paths:
       - $ref: '#/components/parameters/photosId'
       - $ref: '#/components/parameters/commentId'
     delete:
+      security:
+      - bearerAuth : []
       tags: ["comments"]
       description: allows to delete comment on photos
       summary: comments on photos
@@ -398,6 +426,8 @@ paths:
     parameters:
       - $ref: "#/components/parameters/userId"
     get:
+      security:
+      - bearerAuth : []
       tags: ["user"]
       description: get the list of follows
       summary: retrieve list of follows for the user
@@ -435,6 +465,8 @@ paths:
       - $ref: '#/components/parameters/followedId'
       - $ref: '#/components/parameters/userId'
     post:
+      security:
+      - bearerAuth : []
       tags: ["follows"]
       description: allows to follows other accounts
       summary: follow another account
@@ -459,6 +491,8 @@ paths:
     parameters:
       - $ref: "#/components/parameters/userId"
     get:
+      security:
+      - bearerAuth : []
       tags: ["user"]
       description: get the list of followers
       summary: retrieve list of followers for the user
@@ -498,6 +532,8 @@ paths:
       - $ref: '#/components/parameters/userId'
       - $ref: '#/components/parameters/bannedId'
     post:
+      security:
+      - bearerAuth : []
       tags: ["bans"]
       description: allows to ban other accounts
       summary: ban another account
@@ -508,6 +544,8 @@ paths:
         "401":
           $ref: '#/components/responses/UnauthorizedError'
     delete:
+      security:
+      - bearerAuth : []
       tags: ["bans"]
       description: allows to ban other accounts
       summary: unban another account
