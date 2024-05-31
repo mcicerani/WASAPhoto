@@ -16,7 +16,15 @@ func (rt *_router) searchUser(w http.ResponseWriter, r *http.Request, _ httprout
 	username := r.FormValue("username")
 	var loggedUser = ctx.User
 
-	if loggedUser.ID == 0 {
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -56,7 +64,15 @@ func (rt *_router) searchUser(w http.ResponseWriter, r *http.Request, _ httprout
 // SetMyUsernameHandler modifica il nome utente
 func (rt *_router) setMyUsername(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	if ctx.User.ID == 0 {
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -68,7 +84,7 @@ func (rt *_router) setMyUsername(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	username := r.FormValue("username")
-	err := ctx.Database.UpdateUsername(ps.ByName("userId"), username)
+	err = ctx.Database.UpdateUsername(ps.ByName("userId"), username)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -81,7 +97,15 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 
 	var loggedUser = ctx.User
 
-	if loggedUser.ID == 0 {
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -169,7 +193,15 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 // getMyStreamHandle ritorna lo stream dell'utente cliccando su tasto stream
 func (rt *_router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	if ctx.User.ID == 0 {
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -201,7 +233,15 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 
 	var loggedUser = ctx.User
 
-	if loggedUser.ID == 0 {
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -229,7 +269,15 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 // unfollowUserHandler smette di seguire un utente
 func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	if ctx.User.ID == 0 {
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -257,7 +305,15 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 // getUserFollowsHandler ritorna gli utenti seguiti
 func (rt *_router) getUserFollows(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	if ctx.User.ID == 0 {
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -279,7 +335,15 @@ func (rt *_router) getUserFollows(w http.ResponseWriter, r *http.Request, ps htt
 // getUserFollowersHandler ritorna gli utenti che seguono
 func (rt *_router) getUserFollowers(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	if ctx.User.ID == 0 {
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -301,12 +365,20 @@ func (rt *_router) getUserFollowers(w http.ResponseWriter, r *http.Request, ps h
 // banUserHandler banna un utente
 func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	if ctx.User.ID == 0 {
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	err := ctx.Database.BanUser(strconv.Itoa(ctx.User.ID), ps.ByName("bannedId"))
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err = ctx.Database.BanUser(strconv.Itoa(ctx.User.ID), ps.ByName("bannedId"))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -332,12 +404,20 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 // unbanUserHandler rimuove il ban a un utente
 func (rt *_router) unbanUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	if ctx.User.ID == 0 {
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	err := ctx.Database.UnbanUser(strconv.Itoa(ctx.User.ID), ps.ByName("bannedId"))
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err = ctx.Database.UnbanUser(strconv.Itoa(ctx.User.ID), ps.ByName("bannedId"))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
