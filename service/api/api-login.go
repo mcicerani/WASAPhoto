@@ -40,7 +40,7 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, _ httprouter.
 	}
 
 	// Genera un token con l'identificatore utente
-	token := strconv.Itoa(user.ID)
+	token := "Bearer " + strconv.Itoa(user.ID)
 
 	// Restituisci il token nella risposta
 	w.Header().Set("Content-Type", "application/json")

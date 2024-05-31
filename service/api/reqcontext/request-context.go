@@ -10,6 +10,9 @@ import (
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/database"
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	"strings"
+	"errors"
 )
 
 // RequestContext is the context of the request, for request-dependent parameters
@@ -25,4 +28,34 @@ type RequestContext struct {
 
 	// User is the user logged in that made the request
 	User database.User
+
+	// BearerToken is the bearer token used to authenticate the user
+	Token string
+}
+
+// ExtractBearerToken extracts the bearer token from the Authorization header
+func ExtractBearerToken(r *http.Request) (string, error) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return "", errors.New("authorization header missing")
+	}
+
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+		return "", errors.New("invalid authorization header format")
+	}
+
+	return parts[1], nil
+}
+
+// AuthenticateUser authenticates the user using the bearer token
+func AuthenticateUser(token string, db database.AppDatabase) (database.User, error) {
+
+	// Check if the token is a valid integer
+	user, err := db.GetUserById(token)
+	if err != nil {
+		return database.User{}, errors.New("user not found")
+	}
+
+	return user, nil
 }
