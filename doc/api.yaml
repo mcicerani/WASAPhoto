@@ -90,7 +90,7 @@ paths:
 
 #-------Profile-------#
 
-  /users/search:
+  /users:
     get:
       security:
       - bearerAuth : []
@@ -109,36 +109,6 @@ paths:
           $ref: '#/components/responses/BannedUser'
         '404':
           $ref: '#/components/responses/UserNotFound'
-  /users/{userId}/editProfile:
-    parameters:
-      - $ref: '#/components/parameters/userId'
-    put:
-      security:
-      - bearerAuth : []
-      tags: ["user"]
-      description: allows to set a new username
-      summary: Set a new Username
-      operationId: SetMyUserName
-      requestBody:
-        description: new username
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserProfilePrototype'
-        required: true
-      responses:
-        "201":
-          description: username updated
-          content: 
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserProfilePrototype'
-              examples:
-                example1:
-                  value:
-                   username: "Alessandro"
-        "401":
-          $ref: '#/components/responses/UnauthorizedError'
   
   /users/{userId}/profile:
     parameters:
@@ -169,6 +139,36 @@ paths:
         "401":
           $ref: '#/components/responses/UnauthorizedError'
 
+  /users/{userId}/profile/edit:
+    parameters:
+      - $ref: '#/components/parameters/userId'
+    put:
+      security:
+      - bearerAuth : []
+      tags: ["user"]
+      description: allows to set a new username
+      summary: Set a new Username
+      operationId: SetMyUserName
+      requestBody:
+        description: new username
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfilePrototype'
+        required: true
+      responses:
+        "201":
+          description: username updated
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfilePrototype'
+              examples:
+                example1:
+                  value:
+                   username: "Alessandro"
+        "401":
+          $ref: '#/components/responses/UnauthorizedError'
 
 #-------stream of Photos-------#
 
