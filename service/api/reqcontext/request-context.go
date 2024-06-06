@@ -7,12 +7,12 @@ Each value here should be assumed valid only per request only, with some excepti
 package reqcontext
 
 import (
+	"errors"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/database"
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
-	"errors"
 )
 
 // RequestContext is the context of the request, for request-dependent parameters
