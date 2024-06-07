@@ -1,12 +1,10 @@
 <script>
 import axios from 'axios';
 import UserListModal from './UserListModal.vue';
-import EditUsernameModal from './EditUsernameModal.vue';
 
 export default {
     components: {
         UserListModal,
-        EditUsernameModal
     },
     data() {
         return {
@@ -16,14 +14,6 @@ export default {
         }
     },
     methods: {
-        EditUsernameModal() {
-            this.$modal.show(EditUsernameModal, {
-                username: this.username
-            }, {
-                height: 'auto',
-                width: 'auto'
-            });
-        },
         followersModal() {
             axios.get('/users/{userid}/followers').then(response => {
                 this.$modal.show(UserListModal, {
@@ -61,7 +51,7 @@ export default {
 <template>
     <div>
         <h1>{{username}}</h1>
-        <button @click="EditUsernameModal">Edit Username</button>
+        <button>Edit Username</button>
         <button @click="followersModal">Followers: {{numFollowers}}</button>
         <button @click="FollowsModal">Follows: {{numFollows}}</button>
     </div>
