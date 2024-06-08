@@ -1,29 +1,34 @@
 <script>
-
-import axios from "axios";
+import axios from 'axios';
 
 export default {
-    data() {
-        return {
-            username: "",
-            password: ""
-        }
-    },
-    methods: {
-        async doLogin() {
-            try {
-                const response = await axios.post("/session", {
-                    username: this.username,
-                    });
-                console.log('Login successful', response.data);
-                const userId = response.data.userId;
-                this.$router.push('/users/${userId}')
-            } catch (error) {
-                console.error('Error logging in', error);
-            }
-        }
+  data() {
+    return {
+      username: '',
+    };
+  },
+  methods: {
+    async login() {
+      try {
+        const response = await axios.post('/api/login', {
+          username: this.username,
+        });
+
+        // Presumendo che la risposta contenga un token con il prefisso "Bearer "
+        const token = response.data.token;
+        localStorage.setItem('token', token); // Salva il token nel localStorage
+
+        // Estrai l'ID utente dal token
+        const userId = token.split(" ")[1];
+
+        // Reindirizza al profilo utente
+        this.$router.push(`/users/${userId}/profile`);
+      } catch (error) {
+        console.error('Errore di login:', error);
+      }
     }
-}
+  }
+};
 </script>
 
 <template>
