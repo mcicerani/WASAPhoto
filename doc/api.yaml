@@ -90,7 +90,7 @@ paths:
 
 #-------Profile-------#
 
-  /users/search:
+  /users:
     get:
       security:
       - bearerAuth : []
@@ -109,7 +109,7 @@ paths:
           $ref: '#/components/responses/BannedUser'
         '404':
           $ref: '#/components/responses/UserNotFound'
-  /users/{userId}/editProfile:
+  /users/{userId}/profile/edit:
     parameters:
       - $ref: '#/components/parameters/userId'
     put:
