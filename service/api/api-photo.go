@@ -52,7 +52,7 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 
 	// Generare un nome di file univoco basato sull'ID dell'utente e sul timestamp
 	timestamp := time.Now().Format("20060102150405") // Formato timestamp: YYYYMMDDHHmmSS
-	filename := fmt.Sprintf("Photo_%s_%s.jpg", userID, timestamp)
+	filename := fmt.Sprintf("%s_%s.jpg", userID, timestamp)
 
 	// Salvataggio della foto nel sistema di archiviazione locale
 
