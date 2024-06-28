@@ -1,0 +1,23 @@
+# Create a first temporary image named as "builder"
+FROM golang:1.19.1 AS builder
+
+# Switch to the /src/ directory or create if necessary
+# copy Go code in image
+WORKDIR /src/
+COPY . .
+
+# Build the executable (in "builder")
+RUN go build -o /app/webapi ./cmd/webapi
+
+# Create final container
+FROM debian:bookworm
+
+# Inform Docker that our server uses port 3000
+EXPOSE 3000
+
+# Copy the executable from the "builder" image
+WORKDIR /app/
+COPY --from=builder /app/webapi ./
+
+# Set the default program to our Go backend
+CMD ["/app/webapi"]

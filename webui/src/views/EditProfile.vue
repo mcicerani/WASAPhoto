@@ -1,30 +1,18 @@
-<template>
-    <div class="modal">
-        <form>
-            <label for="new-username">Username:</label>
-            <input type="text" id="new-username" placeholder="Username" v-model="username">
-            <button @click="setMyUsername">Update</button>
-        </form>
-    </div>
-</template>
-
 <script>
-import axios from 'axios';
 
-export default {
-    data() {
-        return {
-            username: ''
-        }
-    },
-    methods: {
-        setMyUsername() {
-            axios.post('/users/{userid}', {
-                username: this.username
-            }).then(() => {
-                this.$emit('username-updated', this.username);
-            });
-        }
-    }
-}
+import axios from 'axios'; // Importa l'istanza personalizzata di Axios
+
+// inserisce nuovo username e lo sostiutisce a quello vecchio
+
+
 </script>
+
+<template>
+    <form>
+        <div>
+            <label for="username">Username</label>
+            <input type="text" id="username" v-model="user.username">
+        </div>
+        <button type="submit">Salva</button>
+    </form>
+</template>
