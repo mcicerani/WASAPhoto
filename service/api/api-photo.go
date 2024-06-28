@@ -35,15 +35,6 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	// Creare la cartella photos se non esiste
-	photoDir := "WASAphoto/photos"
-	err = os.MkdirAll(photoDir, os.ModePerm)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	
-
 	// Ottenere il file dall'input del modulo
 	file, _, err := r.FormFile("file")
 	if err != nil {
@@ -61,7 +52,7 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 
 	// Generare un nome di file univoco basato sull'ID dell'utente e sul timestamp
 	timestamp := time.Now().Format("20060102150405") // Formato timestamp: YYYYMMDDHHmmSS
-	filename := fmt.Sprintf("Photo_%s_%s.jpg", userID, timestamp)
+	filename := fmt.Sprintf("%s_%s.jpg", userID, timestamp)
 
 	// Salvataggio della foto nel sistema di archiviazione locale
 
