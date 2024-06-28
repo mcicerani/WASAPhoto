@@ -35,6 +35,15 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
+	// Creare la cartella photos se non esiste
+	photoDir := "WASAphoto/photos"
+	err = os.MkdirAll(photoDir, os.ModePerm)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	
+
 	// Ottenere il file dall'input del modulo
 	file, _, err := r.FormFile("file")
 	if err != nil {

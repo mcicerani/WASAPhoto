@@ -1,10 +1,17 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
 </script>
-<script>
-export default {}
-</script>
 
+<script>
+	export default {
+	methods: {
+		logout() {
+		localStorage.removeItem('token');
+		this.$router.push('/session');
+		}
+	}
+	}
+</script>
 <template>
 
 	<header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
@@ -12,6 +19,7 @@ export default {}
 		<button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
 			<span class="navbar-toggler-icon"></span>
 		</button>
+		<button class="logout" @click="logout">Logout</button>
 	</header>
 
 	<div class="container-fluid">
@@ -49,6 +57,3 @@ export default {}
 		</div>
 	</div>
 </template>
-
-<style>
-</style>

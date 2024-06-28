@@ -10,7 +10,7 @@ export default {
   methods: {
     async login() {
       try {
-        const response = await axios.post('/api/login', {
+        const response = await axios.post('/session', {
           username: this.username,
         });
 
@@ -22,7 +22,7 @@ export default {
         const userId = token.split(" ")[1];
 
         // Reindirizza al profilo utente
-        this.$router.push(`/users/${userId}/profile`);
+        this.$router.push(`/users/${userId}/stream`);
       } catch (error) {
         console.error('Errore di login:', error);
       }
@@ -32,14 +32,46 @@ export default {
 </script>
 
 <template>
-    <div>
-        <h2>Login</h2>
+    <div className="loginform">
+        <h1>Login</h1>
         <form @submit.prevent="login">
-            <div>
-                <label for="username">Username</label>
-                <input type="text" id="username" placeholder="Username" v-model="username">
-            </div>
-            <button type="submit">Login</button>
+          <div>
+              <input type="text" id="username" placeholder="Username" v-model="username">
+          </div>
+          <button type="submit">Login</button>
         </form>
     </div>
 </template>
+
+<style>
+
+  .loginform {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 90vh;
+  }
+
+  form {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  input {
+    padding: 0.2rem;
+    font-size: 1rem;
+    margin-left: 1rem;
+  }
+
+  form button {
+    padding: 0.2rem 1rem;
+    font-size: 1rem;
+    margin-left: 1rem;
+    cursor: pointer;
+    border-radius: 10px;
+  }
+
+</style>
