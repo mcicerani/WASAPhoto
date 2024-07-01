@@ -40,6 +40,24 @@ tags:
     description: Operation related to search other users
 paths:
 
+############## Info Applicazione ##############
+
+  /:
+    get:
+      summary: Ritorna info sull'app
+      description: Ritorna dettagli e informazioni applicazione
+      responses:
+        "200":
+          description: Successo. Informazioni sull'applicazione restituite
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Benvenuto nella nostra applicazione!
+
 ############## Simplified login ##############
 
   /session:
