@@ -23,6 +23,7 @@ func (rt *_router) wrap(fn httpRouterHandler) func(http.ResponseWriter, *http.Re
 		}
 		var ctx = reqcontext.RequestContext{
 			ReqUUID: reqUUID,
+			Database: rt.db,
 		}
 
 		// Create a request-specific logger

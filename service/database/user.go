@@ -9,23 +9,25 @@ import (
 
 // SetUser crea nuovo user nel database
 func (a *appdbimpl) SetUser(name string) error {
-
 	_, err := a.c.Exec(`INSERT INTO users (username) VALUES (?)`, name)
 	if err != nil {
-
+		// Controlla se l'errore è dovuto alla violazione di unicità del nome utente
 		if err.Error() == "UNIQUE constraint failed: users.username" {
 			return fmt.Errorf("username already exists: %w", err)
 		}
 
+		// Altrimenti, gestisci l'errore generico di inserimento utente
 		return fmt.Errorf("inserting user: %w", err)
 	}
+
+	// Se l'inserimento ha avuto successo, ritorna nil
 	return nil
 }
 
 // GetUserByUsername restituisce i dettagli dell'user in users con username=name
 func (a *appdbimpl) GetUserByUsername(name string) (User, error) {
 	var user User
-	err := a.c.QueryRow(`SELECT * FROM users WHERE username = ?`, name).Scan(&user.Username, &user.ID)
+	err := a.c.QueryRow(`SELECT * FROM users WHERE username = ?`, name).Scan(&user.ID, &user.Username)
 	if err != nil {
 		return user, fmt.Errorf("selecting user: %w", err)
 	}
@@ -42,7 +44,7 @@ func (a *appdbimpl) GetUserById(iD string) (User, error) {
 		return user, fmt.Errorf("converting user ID to integer: %w", err)
 	}
 
-	err = a.c.QueryRow(`SELECT * FROM users WHERE ID = ?`, userID).Scan(&user.Username, &user.ID)
+	err = a.c.QueryRow(`SELECT * FROM users WHERE ID = ?`, userID).Scan(&user.ID, &user.Username)
 	if err != nil {
 		return user, fmt.Errorf("selecting user: %w", err)
 	}
