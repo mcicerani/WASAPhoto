@@ -1,5 +1,6 @@
 <script>
 import axios from 'axios';
+import api from "@/services/axios"
 
 export default {
   data() {
@@ -10,7 +11,7 @@ export default {
   methods: {
     async dologin() {
       try {
-        const response = await axios.post('/session', {
+        const response = await api.post('/session', {
           username: this.username,
         });
 
