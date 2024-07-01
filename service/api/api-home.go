@@ -12,7 +12,7 @@ func (rt *_router) homeHandle(w http.ResponseWriter, r *http.Request, _ httprout
 	response := struct {
 		Message string `json:"message"`
 	}{
-		Message: "Benvenuto in WASAPhoto"
+		Message: "Benvenuto in WASAPhoto",
 	}
 
 	// Concerti la struttura in JSON
