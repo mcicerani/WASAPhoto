@@ -8,7 +8,7 @@ export default {
     };
   },
   methods: {
-    async login() {
+    async dologin() {
       try {
         const response = await axios.post('/session', {
           username: this.username,
@@ -34,7 +34,7 @@ export default {
 <template>
     <div className="loginform">
         <h1>Login</h1>
-        <form @submit.prevent="login">
+        <form @submit.prevent="dologin">
           <div>
               <input type="text" id="username" placeholder="Username" v-model="username">
           </div>
