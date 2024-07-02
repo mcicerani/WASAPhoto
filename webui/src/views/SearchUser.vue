@@ -1,6 +1,8 @@
 <script>
 
 import axios from 'axios';
+import api from "@/services/axios"
+
 
 export default {
   data() {
@@ -12,7 +14,7 @@ export default {
   methods: {
     async searchUsers() {
       try {
-        const response = await axios.get(`/api/users?search=${this.search}`);
+        const response = await api.get(`/api/users?search=${this.search}`);
         this.users = response.data;
       } catch (error) {
         console.error('Errore durante la ricerca degli utenti:', error);

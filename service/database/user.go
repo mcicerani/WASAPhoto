@@ -35,7 +35,8 @@ func (a *appdbimpl) GetUserByUsername(name string) (User, error) {
 	return user, nil
 }
 
-// GetUserById restituisce i dettagli dell'user in user_profile con UserId=id
+
+// GetUserById restituisce i dettagli dell'utente con l'ID specificato
 func (a *appdbimpl) GetUserById(iD string) (User, error) {
 	var user User
 
@@ -44,10 +45,18 @@ func (a *appdbimpl) GetUserById(iD string) (User, error) {
 		return user, fmt.Errorf("converting user ID to integer: %w", err)
 	}
 
+	fmt.Printf("User ID estratto: %d\n", userID) // Log dell'ID estratto
+
 	err = a.c.QueryRow(`SELECT * FROM users WHERE ID = ?`, userID).Scan(&user.ID, &user.Username)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Println("Nessuna riga trovata per l'ID specificato")
+		} else {
+			fmt.Printf("Errore nella query SQL: %v\n", err) // Log dell'errore SQL
+		}
 		return user, fmt.Errorf("selecting user: %w", err)
 	}
+
 	return user, nil
 }
 

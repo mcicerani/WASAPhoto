@@ -13,7 +13,3 @@ FROM nginx:stable
 
 # Copy the built app from the builder image
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Expose port 5174
-EXPOSE 5174
-CMD ["nginx", "-g", "daemon off;"]

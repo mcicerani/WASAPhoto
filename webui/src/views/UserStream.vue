@@ -1,5 +1,7 @@
 <script>
 import axios from 'axios'; // Importa l'istanza personalizzata di Axios
+import api from "@/services/axios"
+
 
 
 
@@ -15,7 +17,7 @@ export default {
     methods: {
         async fetchUserStream() {
             try {
-                const response = await axios.get('/api/user/stream'); // Make a GET request to the user stream API endpoint
+                const response = await api.get('/api/user/stream'); // Make a GET request to the user stream API endpoint
                 this.userStream = response.data; // Store the fetched user stream photos in the data property
             } catch (error) {
                 console.error(error);
