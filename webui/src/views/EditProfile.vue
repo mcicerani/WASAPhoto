@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div className="usernameForm">
       <h1>Cambia Username</h1>
       <form @submit.prevent="changeUsername">
         <div>
@@ -56,6 +56,35 @@
   </script>
   
   <style>
-  /* Stili opzionali */
+
+  .usernameForm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 90vh;
+  }
+
+  form {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  input {
+    padding: 0.2rem;
+    font-size: 1rem;
+    margin-left: 1rem;
+  }
+
+  form button {
+    padding: 0.2rem 1rem;
+    font-size: 1rem;
+    margin-left: 1rem;
+    cursor: pointer;
+    border-radius: 10px;
+  }
+
   </style>
     
