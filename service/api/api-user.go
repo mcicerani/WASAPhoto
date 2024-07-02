@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -94,100 +95,112 @@ func (rt *_router) setMyUsername(w http.ResponseWriter, r *http.Request, ps http
 
 // GetUserProfileHandler ritorna il profilo utente
 func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+    userId := ps.ByName("userId")
+    log.Printf("Getting profile for user ID: %s", userId)
 
-	var loggedUser = ctx.User
+    var loggedUser = ctx.User
 
-	token, err := reqcontext.ExtractBearerToken(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+    token, err := reqcontext.ExtractBearerToken(r)
+    if err != nil {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
 
-	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+    // Autentica l'utente utilizzando il token
+    _, err = reqcontext.AuthenticateUser(token, ctx.Database)
+    if err != nil {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
 
-	isBanned, err := ctx.Database.IsBanned(strconv.Itoa(loggedUser.ID), ps.ByName("userId"))
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    isBanned, err := ctx.Database.IsBanned(strconv.Itoa(loggedUser.ID), userId)
+    if err != nil {
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	if isBanned {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return
-	}
+    if isBanned {
+        http.Error(w, "Forbidden", http.StatusForbidden)
+        return
+    }
 
-	user, err := ctx.Database.GetUserById(ps.ByName("userId"))
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    user, err := ctx.Database.GetUserById(userId)
+    if err != nil {
+        log.Printf("Error retrieving user: %v", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	Followers, err := ctx.Database.GetFollowers(ps.ByName("userId"))
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    followers, err := ctx.Database.GetFollowers(userId)
+    if err != nil {
+        log.Printf("Error retrieving followers: %v", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	numFollowers, err := ctx.Database.CountFollowersByUserID(ps.ByName("userId"))
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    numFollowers, err := ctx.Database.CountFollowersByUserID(userId)
+    if err != nil {
+        log.Printf("Error counting followers: %v", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	Follows, err := ctx.Database.GetFollows(ps.ByName("userId"))
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    follows, err := ctx.Database.GetFollows(userId)
+    if err != nil {
+        log.Printf("Error retrieving follows: %v", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	numFollows, err := ctx.Database.CountFollowsByUserID(ps.ByName("userId"))
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    numFollows, err := ctx.Database.CountFollowsByUserID(userId)
+    if err != nil {
+        log.Printf("Error counting follows: %v", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	Photos, err := ctx.Database.GetPhotosByUserID(ps.ByName("userId"))
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    photos, err := ctx.Database.GetPhotosByUserID(userId)
+    if err != nil {
+        log.Printf("Error retrieving photos: %v", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	numPhotos, err := ctx.Database.CountPhotosByUserID(ps.ByName("userId"))
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    numPhotos, err := ctx.Database.CountPhotosByUserID(userId)
+    if err != nil {
+        log.Printf("Error counting photos: %v", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	// Costruisci il profilo utente con tutte le informazioni
-	userProfile := struct {
-		User         database.User    `json:"user"`
-		Followers    []database.User  `json:"followers"`
-		NumFollowers int              `json:"numFollowers"`
-		Follows      []database.User  `json:"follows"`
-		NumFollowing int              `json:"numFollowing"`
-		Photos       []database.Photo `json:"Photos"`
-		NumPhotos    int              `json:"numPhotos"`
-	}{
-		User:         user,
-		Followers:    Followers,
-		NumFollowers: numFollowers,
-		Follows:      Follows,
-		NumFollowing: numFollows,
-		Photos:       Photos,
-		NumPhotos:    numPhotos,
-	}
+    // Costruisci il profilo utente con tutte le informazioni
+    userProfile := struct {
+        User         database.User    `json:"user"`
+        Followers    []database.User  `json:"followers"`
+        NumFollowers int              `json:"numFollowers"`
+        Follows      []database.User  `json:"follows"`
+        NumFollowing int              `json:"numFollowing"`
+        Photos       []database.Photo `json:"Photos"`
+        NumPhotos    int              `json:"numPhotos"`
+    }{
+        User:         user,
+        Followers:    followers,
+        NumFollowers: numFollowers,
+        Follows:      follows,
+        NumFollowing: numFollows,
+        Photos:       photos,
+        NumPhotos:    numPhotos,
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(userProfile)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    w.Header().Set("Content-Type", "application/json")
+    err = json.NewEncoder(w).Encode(userProfile)
+    if err != nil {
+        log.Printf("Error encoding JSON response: %v", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
+
+    log.Printf("Profile response: %+v", userProfile)
 }
 
 // getMyStreamHandle ritorna lo stream dell'utente cliccando su tasto stream

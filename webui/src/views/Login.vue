@@ -19,11 +19,14 @@ export default {
         const token = response.data.token;
         localStorage.setItem('token', token); // Salva il token nel localStorage
 
+        // Salva in localStorage username e userID
         // Estrai l'ID utente dal token
         const userId = token.split(" ")[1];
+        localStorage.setItem('username', this.username)
+        localStorage.setItem('userId', userId)
 
         // Reindirizza al profilo utente
-        this.$router.push(`/users/${userId}/stream`);
+        this.$router.push(`/users/${userId}/profile`);
       } catch (error) {
         console.error('Errore di login:', error);
       }
