@@ -17,17 +17,4 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach((to, from, next) => {
-  const loggedInUserId = localStorage.getItem('loggedInUserId');
-  if (to.meta.requiresAuth && !loggedInUserId) {
-    // Se la route richiede l'autenticazione e l'utente non è loggato, reindirizza alla pagina di login
-    next('/session');
-  } else if (to.path === '/users/:userId/profile' && !to.params.userId) {
-    // Se l'utente tenta di accedere al proprio profilo senza specificare l'userId, reindirizza al proprio profilo
-    next({ path: `/users/${loggedInUserId}/profile` });
-  } else {
-    next();
-  }
-});
-
 export default router

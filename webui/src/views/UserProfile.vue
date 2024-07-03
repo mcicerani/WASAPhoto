@@ -11,9 +11,9 @@
         </p>
         <p v-else class="text-center">
           <!-- Pulsante per il toggle ban -->
-          <button @click="toggleBan(userProfile.user.id)" class="btn btn-danger">{{ isBanned ? 'Unban' : 'Ban' }}</button>
+          <button @click="toggleBan" class="btn btn-danger">{{ isBanned ? 'Unban' : 'Ban' }}</button>
           <!-- Pulsante per il toggle follow -->
-          <button @click="toggleFollow(userProfile.user.id)" class="btn btn-primary">{{ isFollowing ? 'Unfollow' : 'Follow' }}</button>
+          <button @click="toggleFollow" class="btn btn-primary">{{ isFollowing ? 'Unfollow' : 'Follow' }}</button>
         </p>
       </div>
     </div>
@@ -73,7 +73,8 @@ export default {
         Photos: []
       },
       isFollowing: false,
-      isBanned: false
+      isBanned: false,
+      isBannedByLoggedInUser: false
     };
   },
   computed: {
@@ -103,33 +104,42 @@ export default {
         console.log('User profile response:', response.data);
         this.userProfile = response.data;
 
-        // Inizialmente verifica se l'utente loggato sta seguendo questo profilo
+        // Verifica se l'utente loggato sta seguendo questo profilo
         const loggedInUserId = localStorage.getItem('loggedInUserId');
-        if (loggedInUserId && parseInt(loggedInUserId) === this.userProfile.user.id) {
-          this.isFollowing = true; // Se è il proprio profilo, assume che si stia seguendo
-        } else {
-          this.isFollowing = await this.checkIfFollowing(loggedInUserId);
-        }
+        if (loggedInUserId) {
+          const follows = await this.fetchFollows(loggedInUserId);
+          const bans = await this.fetchBans(loggedInUserId);
 
-        // Verifica se l'utente loggato è bannato dal profilo
-        this.isBanned = await this.checkIfBanned(loggedInUserId);
+          this.isFollowing = follows.includes(userId);
+          this.isBannedByLoggedInUser = bans.includes(userId);
+          this.isBanned = await this.checkIfBanned(userId, loggedInUserId);
+        }
 
       } catch (error) {
         console.error('Errore nel caricamento del profilo:', error);
       }
     },
-    async checkIfFollowing(loggedInUserId) {
+    async fetchFollows(userId) {
       try {
-        const response = await api.get(`/users/${loggedInUserId}/follows/${this.userProfile.user.id}`);
-        return response.data.isFollowing;
+        const response = await api.get(`/users/${userId}/follows`);
+        return response.data.map(user => user.id);
       } catch (error) {
-        console.error('Errore nel recupero dello stato di follow:', error);
-        return false;
+        console.error('Errore nel recupero degli utenti seguiti:', error);
+        return [];
       }
     },
-    async checkIfBanned(loggedInUserId) {
+    async fetchBans(userId) {
       try {
-        const response = await api.get(`/users/${loggedInUserId}/bans/${this.userProfile.user.id}`);
+        const response = await api.get(`/users/${userId}/bans`);
+        return response.data.map(user => user.id);
+      } catch (error) {
+        console.error('Errore nel recupero degli utenti bannati:', error);
+        return [];
+      }
+    },
+    async checkIfBanned(profileUserId, loggedInUserId) {
+      try {
+        const response = await api.get(`/users/${loggedInUserId}/bans/${profileUserId}`);
         return response.data.isBanned;
       } catch (error) {
         console.error('Errore nel recupero dello stato di ban:', error);
@@ -157,6 +167,28 @@ export default {
       try {
         const userId = this.userProfile.user.id;
         const loggedInUserId = localStorage.getItem('loggedInUserId');
+
+        // Carica i seguaci e i bannati dell'utente loggato
+        const follows = await this.fetchFollows(loggedInUserId);
+        const bans = await this.fetchBans(loggedInUserId);
+
+        // Verifica se l'utente loggato è già bannato o seguito
+        const isAlreadyFollowing = follows.includes(userId);
+        const isAlreadyBanned = bans.includes(userId);
+
+        // Verifica se l'utente visualizzato è già bannato dall'utente loggato
+        if (isAlreadyBanned) {
+          console.log('Utente già bannato da te, impossibile eseguire l\'azione.');
+          return;
+        }
+
+        // Verifica se l'utente loggato è già seguito dall'utente visualizzato
+        if (isAlreadyFollowing) {
+          console.log('Utente già seguito da te, impossibile eseguire l\'azione.');
+          return;
+        }
+
+        // Se non ci sono problemi, esegui l'azione di ban/unban
         if (this.isBanned) {
           // Unban
           await api.delete(`/users/${loggedInUserId}/bans/${userId}`);
@@ -164,8 +196,10 @@ export default {
           // Ban
           await api.post(`/users/${loggedInUserId}/bans/${userId}`);
         }
+
         // Aggiorna lo stato di isBanned dopo l'azione
         this.isBanned = !this.isBanned;
+
       } catch (error) {
         console.error('Errore nel toggle ban:', error);
       }
