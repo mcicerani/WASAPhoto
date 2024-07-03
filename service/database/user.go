@@ -87,23 +87,28 @@ func (a *appdbimpl) UpdateUsername(iD string, newname string) error {
 
 // FollowUser crea nella tabella la relazione followed/follower
 func (a *appdbimpl) FollowUser(userID string, followedUserID string) error {
+    UserID, err := strconv.Atoi(userID)
+    if err != nil {
+        return fmt.Errorf("converting user ID to integer: %w", err)
+    }
 
-	UserID, err := strconv.Atoi(userID)
-	if err != nil {
-		return fmt.Errorf("converting user ID to integer: %w", err)
-	}
+    FollowedUserID, err := strconv.Atoi(followedUserID)
+    if err != nil {
+        return fmt.Errorf("converting user ID to integer: %w", err)
+    }
 
-	FollowedUserID, err := strconv.Atoi(followedUserID)
-	if err != nil {
-		return fmt.Errorf("converting user ID to integer: %w", err)
-	}
+    // Log dei valori di userID e followedUserID per debug
+    log.Printf("FollowUser: userID = %d, followedUserID = %d", UserID, FollowedUserID)
 
-	_, err = a.c.Exec(`INSERT into followers (follower_id, followed_id) VALUES(?, ?)`, UserID, FollowedUserID)
-	if err != nil {
-		return fmt.Errorf("following user: %w", err)
+    _, err = a.c.Exec(`INSERT into followers (follower_id, followed_id) VALUES(?, ?)`, UserID, FollowedUserID)
+    if err != nil {
+        return fmt.Errorf("following user: %w", err)
+    }
 
-	}
-	return nil
+    // Log per vedere quando viene eseguito il follow tra due utenti
+    log.Printf("User %d followed user %d successfully", UserID, FollowedUserID)
+
+    return nil
 }
 
 // UnfollowUser cancella dalla tabella followers la relazione tra i 2 account
@@ -175,49 +180,53 @@ func (a *appdbimpl) GetFollowers(userID string) ([]User, error) {
 
 // GetFollows restituisce i dettagli dei follows in user_profile con username=name
 func (a *appdbimpl) GetFollows(userID string) ([]User, error) {
+    var follows []User
 
-	var follows []User
+    UserID, err := strconv.Atoi(userID)
+    if err != nil {
+        return follows, fmt.Errorf("converting user ID to integer: %w", err)
+    }
 
-	UserID, err := strconv.Atoi(userID)
-	if err != nil {
-		return follows, fmt.Errorf("converting user ID to integer: %w", err)
-	}
+    log.Printf("Getting follows for user ID: %s", userID)
 
-	rows, err := a.c.Query(`SELECT followed_id FROM followers WHERE follower_id = ?`, UserID)
-	if err != nil {
-		return follows, fmt.Errorf("selecting follows: %w", err)
-	}
+    rows, err := a.c.Query(`SELECT followed_id FROM followers WHERE follower_id = ?`, UserID)
+    if err != nil {
+        return follows, fmt.Errorf("selecting follows: %w", err)
+    }
 
-	defer func(rows *sql.Rows) {
-		err := rows.Close()
-		if err != nil {
-			log.Println("Error closing rows:", err)
-			return
-		}
-	}(rows) // Ensure rows are closed after function returns
+    defer func(rows *sql.Rows) {
+        err := rows.Close()
+        if err != nil {
+            log.Println("Error closing rows:", err)
+        }
+    }(rows) // Ensure rows are closed after function returns
 
-	for rows.Next() {
-		var followedID int
-		err = rows.Scan(&followedID)
-		if err != nil {
-			return follows, fmt.Errorf("scanning followed ID: %w", err)
-		}
+    for rows.Next() {
+        var followedID int
+        err = rows.Scan(&followedID)
+        if err != nil {
+            return follows, fmt.Errorf("scanning followed ID: %w", err)
+        }
 
-		var followed User
-		err = a.c.QueryRow(`SELECT username FROM users WHERE ID = ?`, followedID).Scan(&followed.Username)
-		if err != nil {
-			return follows, fmt.Errorf("selecting followed: %w", err)
-		}
+        var followed User
+        // Query per ottenere il nome utente dell'utente seguito
+        err = a.c.QueryRow(`SELECT ID, username FROM users WHERE ID = ?`, followedID).Scan(&followed.ID, &followed.Username)
+        if err != nil {
+            return follows, fmt.Errorf("selecting followed: %w", err)
+        }
 
-		follows = append(follows, followed)
-	}
+        // Log dopo aver aggiunto ciascun utente seguito alla lista follows
+        log.Printf("Added followed user: ID = %d, Username = %s", followed.ID, followed.Username)
 
-	// Check for errors encountered during iteration
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterating rows: %w", err)
-	}
+        follows = append(follows, followed)
+    }
 
-	return follows, nil
+    // Check for errors encountered during iteration
+    if err = rows.Err(); err != nil {
+        return nil, fmt.Errorf("iterating rows: %w", err)
+    }
+
+    return follows, nil
 }
 
 // BanUser aggiunge alla lista dei ban l'utente da seguire
@@ -285,6 +294,52 @@ func (a *appdbimpl) IsBanned(userID string, otherUserID string) (bool, error) {
 	}
 	return true, nil
 }
+
+// GetBans restituisce la lista degli utenti bannati da un determinato utente
+func (a *appdbimpl) GetBans(userID string) ([]User, error) {
+    var bans []User
+
+    UserID, err := strconv.Atoi(userID)
+    if err != nil {
+        return bans, fmt.Errorf("converting user ID to integer: %w", err)
+    }
+
+    rows, err := a.c.Query(`SELECT banned_id FROM bans WHERE user_id = ?`, UserID)
+    if err != nil {
+        return bans, fmt.Errorf("selecting bans: %w", err)
+    }
+
+    defer func(rows *sql.Rows) {
+        err := rows.Close()
+        if err != nil {
+            log.Println("Error closing rows:", err)
+        }
+    }(rows) // Ensure rows are closed after function returns
+
+    for rows.Next() {
+        var bannedID int
+        err = rows.Scan(&bannedID)
+        if err != nil {
+            return bans, fmt.Errorf("scanning banned ID: %w", err)
+        }
+
+        var banned User
+        err = a.c.QueryRow(`SELECT username FROM users WHERE ID = ?`, bannedID).Scan(&banned.Username)
+        if err != nil {
+            return bans, fmt.Errorf("selecting banned: %w", err)
+        }
+
+        bans = append(bans, banned)
+    }
+
+    // Check for errors encountered during iteration
+    if err = rows.Err(); err != nil {
+        return nil, fmt.Errorf("iterating rows: %w", err)
+    }
+
+    return bans, nil
+}
+
 
 // CountFollowersByUserID restituisce il numero di followers di un utente
 func (a *appdbimpl) CountFollowersByUserID(userID string) (int, error) {

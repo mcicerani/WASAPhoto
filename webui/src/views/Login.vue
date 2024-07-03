@@ -23,8 +23,8 @@ export default {
         // Estrai l'ID utente dal token
         const userId = token.split(" ")[1];
         localStorage.setItem('username', this.username)
-        localStorage.setItem('userId', userId)
-
+        localStorage.setItem('loggedInUserId', userId);
+        
         // Reindirizza al profilo utente
         this.$router.push(`/users/${userId}/profile`);
       } catch (error) {

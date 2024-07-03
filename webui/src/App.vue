@@ -1,5 +1,5 @@
 <script setup>
-import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { ref, onMounted, watch } from 'vue'
 
 const userId = ref(null);
@@ -26,9 +26,13 @@ function loadUserIdFromToken() {
 function logout() {
   localStorage.removeItem('token');
   localStorage.removeItem('username');
-  localStorage.removeItem('userId');
+  localStorage.removeItem('loggedInUserId');
   console.log("User logged out");
   router.push('/session');
+}
+
+function navigateToUserProfile() {
+  router.push(`/users/${userId.value}/profile`);
 }
 
 console.log("Component setup complete, userId:", userId.value);
@@ -51,13 +55,13 @@ console.log("Component setup complete, userId:", userId.value);
           </h6>
           <ul class="nav flex-column">
             <li class="nav-item">
-              <RouterLink :to="`/users/${userId}/profile`" class="nav-link">
+              <RouterLink :to="`/users/${userId.value}/profile`" class="nav-link" @click="navigateToUserProfile">
                 <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#home"/></svg>
                 Profilo
               </RouterLink>
             </li>
             <li class="nav-item">
-              <RouterLink :to="`/users/${userId}/stream`" class="nav-link">
+              <RouterLink :to="`/users/${userId.value}/stream`" class="nav-link">
                 <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#layout"/></svg>
                 Stream
               </RouterLink>
@@ -82,3 +86,4 @@ console.log("Component setup complete, userId:", userId.value);
 <style>
 /* Aggiungi i tuoi stili personalizzati qui */
 </style>
+

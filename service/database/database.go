@@ -50,6 +50,7 @@ type AppDatabase interface {
 	UnfollowUser(userID string, followedUserID string) error
 	GetFollowers(userID string) ([]User, error)
 	GetFollows(userID string) ([]User, error)
+	GetBans(userID string) ([]User, error)
 	BanUser(userID string, bannedUserID string) error
 	UnbanUser(userID string, bannedUserID string) error
 	IsBanned(userID string, otherUserID string) (bool, error)

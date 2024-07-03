@@ -1,18 +1,10 @@
 <template>
-  <div class="container mt-5">
-    <div class="row">
-      <div class="col-md-12">
-        <form class="searchform" @submit.prevent="searchUsers">
-          <h1>Ricerca Utenti</h1>
-          <input type="text" v-model="search" placeholder="Cerca utenti" required>
-          <button type="submit">Cerca</button>
-        </form>
-      </div>
-    </div>
-
-    <div v-if="searchExecuted && !userProfile">
-      <p class="text-center">Nessun utente trovato con questo nome.</p>
-    </div>
+  <div class="searchform">
+    <form @submit.prevent="searchUsers">
+      <h1>Ricerca Utenti</h1>
+      <input type="text" v-model="search" placeholder="Cerca utenti" required>
+      <button type="submit">Cerca</button>
+    </form>
   </div>
 </template>
 
@@ -57,6 +49,7 @@ export default {
         }
         this.userProfile = null;
         this.searchExecuted = true;
+        alert("Nessun Utente trovato con questo nome")
       }
     },
   },
@@ -69,5 +62,6 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  height: 90vh;
 }
 </style>

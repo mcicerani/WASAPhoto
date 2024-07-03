@@ -200,6 +200,14 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
         return
     }
 
+    bans, err := ctx.Database.GetBans(userId)
+    if err != nil {
+        log.Printf("Error retrieving bans: %v", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
+
+
     // Costruisci il profilo utente con tutte le informazioni
     userProfile := struct {
         User         database.User    `json:"user"`
@@ -209,6 +217,7 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
         NumFollowing int              `json:"numFollowing"`
         Photos       []database.Photo `json:"Photos"`
         NumPhotos    int              `json:"numPhotos"`
+		Bans		 []database.User  `json:"bans"`
     }{
         User:         user,
         Followers:    followers,
@@ -217,6 +226,7 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
         NumFollowing: numFollows,
         Photos:       photos,
         NumPhotos:    numPhotos,
+		Bans:		  bans,
     }
 
     w.Header().Set("Content-Type", "application/json")
@@ -271,8 +281,6 @@ func (rt *_router) getMyStream(w http.ResponseWriter, r *http.Request, ps httpro
 // followUserHandler segue un utente
 func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	var loggedUser = ctx.User
-
 	token, err := reqcontext.ExtractBearerToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -280,13 +288,13 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	isBanned, err := ctx.Database.IsBanned(strconv.Itoa(loggedUser.ID), ps.ByName("followedId"))
+	isBanned, err := ctx.Database.IsBanned(strconv.Itoa(user.ID), ps.ByName("followedId"))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -298,11 +306,15 @@ func (rt *_router) followUser(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	followedID := ps.ByName("followedId")
-	err = ctx.Database.FollowUser(strconv.Itoa(ctx.User.ID), followedID)
+	log.Printf("Before calling FollowUser: userID = %s, followedID = %s", user.ID, followedID)
+	err = ctx.Database.FollowUser(strconv.Itoa(user.ID), followedID)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+
+	// Log per vedere su quale utente viene eseguito il follow con successo
+	log.Printf("User %d followed user %s successfully", user.ID, followedID)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -361,6 +373,7 @@ func (rt *_router) getUserFollows(w http.ResponseWriter, r *http.Request, ps htt
 	Follows, err := ctx.Database.GetFollows(ps.ByName("userId"))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Error getting follows for user ID %s: %v", ps.ByName("userId"), err)
 		return
 	}
 
@@ -368,9 +381,43 @@ func (rt *_router) getUserFollows(w http.ResponseWriter, r *http.Request, ps htt
 	err = json.NewEncoder(w).Encode(Follows)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Error encoding follows response: %v", err)
 		return
 	}
 }
+
+// getUserBansHandler ritorna gli utenti bannati da un utente
+func (rt *_router) getUserBans(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+    // Estrai il token Bearer dalla richiesta
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+    // Ottieni la lista degli utenti bannati dall'utente target
+    bans, err := ctx.Database.GetBans(ps.ByName("userId"))
+    if err != nil {
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
+
+    // Restituisci la lista dei bans come JSON
+    w.Header().Set("Content-Type", "application/json")
+    err = json.NewEncoder(w).Encode(bans)
+    if err != nil {
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
+}
+
 
 // getUserFollowersHandler ritorna gli utenti che seguono
 func (rt *_router) getUserFollowers(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
