@@ -5,10 +5,6 @@ import { ref, onMounted, watch } from 'vue'
 const userId = ref(null);
 const router = useRouter();
 
-onMounted(() => {
-  loadUserIdFromToken();
-});
-
 watch(router.currentRoute, () => {
   loadUserIdFromToken();
 });
