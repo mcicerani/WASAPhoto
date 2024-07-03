@@ -328,13 +328,13 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	isBanned, err := ctx.Database.IsBanned(strconv.Itoa(ctx.User.ID), ps.ByName("followedId"))
+	isBanned, err := ctx.Database.IsBanned(strconv.Itoa(user.ID), ps.ByName("followedId"))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -346,7 +346,7 @@ func (rt *_router) unfollowUser(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	followedID := ps.ByName("followedId")
-	err = ctx.Database.UnfollowUser(strconv.Itoa(ctx.User.ID), followedID)
+	err = ctx.Database.UnfollowUser(strconv.Itoa(user.ID), followedID)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -459,13 +459,13 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 	}
 
 	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	err = ctx.Database.BanUser(strconv.Itoa(ctx.User.ID), ps.ByName("bannedId"))
+	err = ctx.Database.BanUser(strconv.Itoa(user.ID), ps.ByName("bannedId"))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -473,13 +473,13 @@ func (rt *_router) banUser(w http.ResponseWriter, r *http.Request, ps httprouter
 
 	// rimuove dai follow e followers
 
-	err = ctx.Database.UnfollowUser(strconv.Itoa(ctx.User.ID), ps.ByName("bannedId"))
+	err = ctx.Database.UnfollowUser(strconv.Itoa(user.ID), ps.ByName("bannedId"))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	err = ctx.Database.UnfollowUser(ps.ByName("bannedId"), strconv.Itoa(ctx.User.ID))
+	err = ctx.Database.UnfollowUser(ps.ByName("bannedId"), strconv.Itoa(user.ID))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -498,13 +498,13 @@ func (rt *_router) unbanUser(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	err = ctx.Database.UnbanUser(strconv.Itoa(ctx.User.ID), ps.ByName("bannedId"))
+	err = ctx.Database.UnbanUser(strconv.Itoa(user.ID), ps.ByName("bannedId"))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return

@@ -162,7 +162,7 @@ func (a *appdbimpl) GetFollowers(userID string) ([]User, error) {
 		}
 
 		var follower User
-		err = a.c.QueryRow(`SELECT username FROM users WHERE ID = ?`, followerID).Scan(&follower.Username)
+		err = a.c.QueryRow(`SELECT ID, username FROM users WHERE ID = ?`, followerID).Scan(&follower.ID, &follower.Username)
 		if err != nil {
 			return followers, fmt.Errorf("selecting follower: %w", err)
 		}
@@ -324,7 +324,7 @@ func (a *appdbimpl) GetBans(userID string) ([]User, error) {
         }
 
         var banned User
-        err = a.c.QueryRow(`SELECT username FROM users WHERE ID = ?`, bannedID).Scan(&banned.Username)
+        err = a.c.QueryRow(`SELECT ID, username FROM users WHERE ID = ?`, bannedID).Scan(&banned.ID, &banned.Username)
         if err != nil {
             return bans, fmt.Errorf("selecting banned: %w", err)
         }
