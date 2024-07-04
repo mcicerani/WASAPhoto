@@ -17,7 +17,6 @@
         </p>
       </div>
     </div>
-
     <div class="row mt-4">
       <div class="col-md-4">
         <div>
@@ -41,7 +40,6 @@
 
     <div class="row mt-4">
       <div class="col-md-12">
-        <h2 class="text-center">Foto:</h2>
         <ul>
           <li v-for="photo in userProfile.Photos" :key="photo.id">
             <img :src="photo.url" :alt="`Photo ${photo.id}`">
@@ -185,4 +183,28 @@ export default {
   h1 {
     text-transform: capitalize;
   }
+  .btn{
+    margin: 1rem;
+    background-color: white;
+    transition: 0.5s all;
+    width: 7rem;
+  }
+  .btn-danger{
+    border: solid 1px red;
+    color: red
+  }
+  .btn-danger:hover{
+    background-color: red;
+    color: white;
+  }
+  .btn-primary{
+    border: solid 1px blue;
+    color: blue;
+  }
+  .btn-primary:hover{
+    background-color: blue;
+    color: white;
+
+  }
+
 </style>
