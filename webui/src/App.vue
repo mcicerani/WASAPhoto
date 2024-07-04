@@ -5,9 +5,20 @@ import { ref, onMounted, watch } from 'vue'
 const userId = ref(null);
 const router = useRouter();
 
-watch(router.currentRoute, () => {
-  loadUserIdFromToken();
-});
+const token = localStorage.getItem('token');
+
+if (token) {
+  onMounted(() => {
+    const loggedInUserId = localStorage.getItem('loggedInUserId');
+    router.push(`/users/${loggedInUserId}/profile`); // Usa il template literal corretto
+  });
+
+  watch(router.currentRoute, () => {
+    loadUserIdFromToken();
+  });
+} else {
+  console.log("Token not found in localStorage");
+}
 
 function loadUserIdFromToken() {
   const token = localStorage.getItem('token');

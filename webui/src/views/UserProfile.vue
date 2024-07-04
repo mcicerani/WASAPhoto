@@ -73,8 +73,7 @@ export default {
         Photos: []
       },
       isFollowing: false,
-      isBanned: false,
-      isBannedByLoggedInUser: false
+      isBanned: false
     };
   },
   computed: {
@@ -85,6 +84,7 @@ export default {
   },
   async mounted() {
     await this.loadUserProfile();
+    await this.loadFollowAndBanStatus();
   },
   watch: {
     '$route.params.userId': 'loadUserProfile'
@@ -92,121 +92,94 @@ export default {
   methods: {
     async loadUserProfile() {
       try {
-        const userId = this.$route.params.userId; // Ottieni l'ID utente dai parametri della route
-        console.log(`User ID from route: ${userId}`);
-
-        console.log("Getting user profile data");
+        const userId = this.$route.params.userId;
         const response = await api.get(`/users/${userId}/profile`, {
           headers: {
             Authorization: localStorage.getItem('token')
           }
         });
-        console.log('User profile response:', response.data);
         this.userProfile = response.data;
-
-        // Verifica se l'utente loggato sta seguendo questo profilo
-        const loggedInUserId = localStorage.getItem('loggedInUserId');
-        if (loggedInUserId) {
-          const follows = await this.fetchFollows(loggedInUserId);
-          const bans = await this.fetchBans(loggedInUserId);
-
-          this.isFollowing = follows.includes(userId);
-          this.isBannedByLoggedInUser = bans.includes(userId);
-          this.isBanned = await this.checkIfBanned(userId, loggedInUserId);
-        }
-
       } catch (error) {
-        console.error('Errore nel caricamento del profilo:', error);
+        console.error('Error loading user profile:', error);
       }
     },
-    async fetchFollows(userId) {
+    async loadFollowAndBanStatus() {
+      const userId = this.$route.params.userId;
+      const loggedInUserId = localStorage.getItem('loggedInUserId');
+
       try {
-        const response = await api.get(`/users/${userId}/follows`);
-        return response.data.map(user => user.id);
+        const followResponse = await api.get(`/users/${loggedInUserId}/follows/${userId}`, {
+          headers: {
+            Authorization: localStorage.getItem('token')
+          }
+        });
+        this.isFollowing = followResponse.data.isFollowed;
+
+        const banResponse = await api.get(`/users/${userId}/bans/${loggedInUserId}`, {
+          headers: {
+            Authorization: localStorage.getItem('token')
+          }
+        });
+        this.isBanned = banResponse.data.isBanned; // Assicurati che isBanned venga impostato correttamente
       } catch (error) {
-        console.error('Errore nel recupero degli utenti seguiti:', error);
-        return [];
-      }
-    },
-    async fetchBans(userId) {
-      try {
-        const response = await api.get(`/users/${userId}/bans`);
-        return response.data.map(user => user.id);
-      } catch (error) {
-        console.error('Errore nel recupero degli utenti bannati:', error);
-        return [];
-      }
-    },
-    async checkIfBanned(profileUserId, loggedInUserId) {
-      try {
-        const response = await api.get(`/users/${loggedInUserId}/bans/${profileUserId}`);
-        return response.data.isBanned;
-      } catch (error) {
-        console.error('Errore nel recupero dello stato di ban:', error);
-        return false;
+        console.error('Error loading follow and ban status:', error);
       }
     },
     async toggleFollow() {
+      const userId = this.userProfile.user.id;
+      const loggedInUserId = localStorage.getItem('loggedInUserId');
+
       try {
-        const userId = this.userProfile.user.id;
-        const loggedInUserId = localStorage.getItem('loggedInUserId');
         if (this.isFollowing) {
-          // Unfollow
-          await api.delete(`/users/${loggedInUserId}/follows/${userId}`);
+          await api.delete(`/users/${loggedInUserId}/follows/${userId}`, {
+            headers: {
+              Authorization: localStorage.getItem('token')
+            }
+          });
+          this.isFollowing = false;
+          this.userProfile.numFollowers--;
         } else {
-          // Follow
-          await api.post(`/users/${loggedInUserId}/follows/${userId}`);
+          await api.post(`/users/${loggedInUserId}/follows/${userId}`, {}, {
+            headers: {
+              Authorization: localStorage.getItem('token')
+            }
+          });
+          this.isFollowing = true;
+          this.userProfile.numFollowers++;
         }
-        // Aggiorna lo stato di isFollowing dopo l'azione
-        this.isFollowing = !this.isFollowing;
       } catch (error) {
-        console.error('Errore nel toggle follow:', error);
+        console.error('Error nel toggle follow:', error);
       }
     },
     async toggleBan() {
+      const userId = this.userProfile.user.id;
+      const loggedInUserId = localStorage.getItem('loggedInUserId');
+
       try {
-        const userId = this.userProfile.user.id;
-        const loggedInUserId = localStorage.getItem('loggedInUserId');
-
-        // Carica i seguaci e i bannati dell'utente loggato
-        const follows = await this.fetchFollows(loggedInUserId);
-        const bans = await this.fetchBans(loggedInUserId);
-
-        // Verifica se l'utente loggato è già bannato o seguito
-        const isAlreadyFollowing = follows.includes(userId);
-        const isAlreadyBanned = bans.includes(userId);
-
-        // Verifica se l'utente visualizzato è già bannato dall'utente loggato
-        if (isAlreadyBanned) {
-          console.log('Utente già bannato da te, impossibile eseguire l\'azione.');
-          return;
-        }
-
-        // Verifica se l'utente loggato è già seguito dall'utente visualizzato
-        if (isAlreadyFollowing) {
-          console.log('Utente già seguito da te, impossibile eseguire l\'azione.');
-          return;
-        }
-
-        // Se non ci sono problemi, esegui l'azione di ban/unban
         if (this.isBanned) {
-          // Unban
-          await api.delete(`/users/${loggedInUserId}/bans/${userId}`);
+          await api.delete(`/users/${loggedInUserId}/bans/${userId}`, {
+            headers: {
+              Authorization: localStorage.getItem('token')
+            }
+          });
+          this.isBanned = false;
         } else {
-          // Ban
-          await api.post(`/users/${loggedInUserId}/bans/${userId}`);
+          await api.post(`/users/${loggedInUserId}/bans/${userId}`, {}, {
+            headers: {
+              Authorization: localStorage.getItem('token')
+            }
+          });
+          this.isBanned = true;
         }
-
-        // Aggiorna lo stato di isBanned dopo l'azione
-        this.isBanned = !this.isBanned;
-
       } catch (error) {
-        console.error('Errore nel toggle ban:', error);
+        console.error('Error toggling ban:', error);
       }
     }
   }
 };
+
 </script>
+
 
 <style>
   h1 {

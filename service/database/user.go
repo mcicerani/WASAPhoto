@@ -229,6 +229,30 @@ func (a *appdbimpl) GetFollows(userID string) ([]User, error) {
 	return follows, nil
 }
 
+// IsFollowed controlla se l'utente segue un altro utente
+func (a *appdbimpl) IsFollowed(userID string, otherUserID string) (bool, error) {
+	// Converti userID e otherUserID in interi
+	UserID, err := strconv.Atoi(userID)
+	if err != nil {
+		return false, fmt.Errorf("converting user ID to integer: %w", err)
+	}
+
+	OtherUserID, err := strconv.Atoi(otherUserID)
+	if err != nil {
+		return false, fmt.Errorf("converting other user ID to integer: %w", err)
+	}
+
+	// Esegui la query per verificare se l'utente segue l'altro utente
+	var exists bool
+	err = a.c.QueryRow(`SELECT EXISTS (SELECT 1 FROM followers WHERE followed_id = ? AND follower_id = ?)`, OtherUserID, UserID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("checking follow: %w", err)
+	}
+
+	// Se exists è true, l'utente segue l'altro utente; altrimenti, non lo segue
+	return exists, nil
+}
+
 // BanUser aggiunge alla lista dei ban l'utente da seguire
 func (a *appdbimpl) BanUser(userID string, bannedUserID string) error {
 
@@ -273,7 +297,7 @@ func (a *appdbimpl) UnbanUser(userID string, bannedUserID string) error {
 
 // IsBanned controlla se l'utente è stato bannato da un altro utente specifico e restituisce true o false
 func (a *appdbimpl) IsBanned(userID string, otherUserID string) (bool, error) {
-
+	// Converti userID e otherUserID in interi
 	UserID, err := strconv.Atoi(userID)
 	if err != nil {
 		return false, fmt.Errorf("converting user ID to integer: %w", err)
@@ -281,18 +305,18 @@ func (a *appdbimpl) IsBanned(userID string, otherUserID string) (bool, error) {
 
 	OtherUserID, err := strconv.Atoi(otherUserID)
 	if err != nil {
-		return false, fmt.Errorf("converting user ID to integer: %w", err)
+		return false, fmt.Errorf("converting other user ID to integer: %w", err)
 	}
 
+	// Esegui la query per verificare se l'utente è bannato
 	var exists bool
-	err = a.c.QueryRow(`SELECT * FROM bans WHERE user_id = ? AND banned_id = ?`, OtherUserID, UserID).Scan(&exists)
+	err = a.c.QueryRow(`SELECT EXISTS (SELECT 1 FROM bans WHERE user_id = ? AND banned_id = ?)`, OtherUserID, UserID).Scan(&exists)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
-			return false, nil
-		}
 		return false, fmt.Errorf("checking ban: %w", err)
 	}
-	return true, nil
+
+	// Se exists è true, l'utente è bannato; altrimenti, non è bannato
+	return exists, nil
 }
 
 // GetBans restituisce la lista degli utenti bannati da un determinato utente

@@ -509,3 +509,101 @@ func (rt *_router) unbanUser(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 	w.WriteHeader(http.StatusOK)
 }
+
+// getIsBanned verifica se l'utente è bannato da un altro utente specifico
+func (rt *_router) getIsBanned(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+	// Estrai il token JWT dall'header Authorization
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token JWT
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Estrai i parametri dall'URL
+	userID := ps.ByName("userId")
+	bannedID := ps.ByName("bannedId")
+
+	// Verifica se l'utente è bannato
+	isBanned, err := ctx.Database.IsBanned(userID, bannedID)
+	if err != nil {
+		// Se l'errore è diverso da "nessuna riga nel set di risultati", restituisci Internal Server Error
+		if err.Error() != "sql: no rows in result set" {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		// Se non c'è ban, restituisci false
+		isBanned = false
+	}
+
+	// Costruisci la risposta JSON
+	response := struct {
+		IsBanned bool `json:"isBanned"`
+	}{
+		IsBanned: isBanned,
+	}
+
+	// Serializza la risposta JSON e scrivi nella risposta HTTP
+	jsonBytes, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Imposta l'intestazione Content-Type e scrivi la risposta
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonBytes)
+}
+
+// getIsFollwed verifica se l'utente segue un altro utente
+func (rt *_router) getIsFollowed(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Estrai i parametri dall'URL
+	userID := ps.ByName("userId")
+	followedID := ps.ByName("followedId")
+
+	// Verifica se l'utente è seguito dall'utente specificato
+	isFollowed, err := ctx.Database.IsFollowed(userID, followedID)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Costruisci la risposta JSON
+	response := struct {
+		IsFollowed bool `json:"isFollowed"`
+	}{
+		IsFollowed: isFollowed,
+	}
+
+	// Serializza la risposta JSON e scrivi nella risposta HTTP
+	jsonBytes, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Imposta l'intestazione Content-Type e scrivi la risposta
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonBytes)
+}
