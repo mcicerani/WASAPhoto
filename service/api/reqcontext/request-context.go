@@ -7,13 +7,14 @@ Each value here should be assumed valid only per request only, with some excepti
 package reqcontext
 
 import (
+	"errors"
+	"fmt"
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/database"
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
+	"log"
 	"net/http"
 	"strings"
-	"fmt"
-	"errors"
 )
 
 // RequestContext is the context of the request, for request-dependent parameters
@@ -47,28 +48,28 @@ func ExtractBearerToken(r *http.Request) (string, error) {
 	}
 
 	token := parts[1]
-	fmt.Printf("Token estratto: %s\n", token) // Aggiungi log per vedere il token estratto
+	log.Printf("Token estratto: %s\n", token) // Aggiungi log per vedere il token estratto
 	return token, nil
 }
 
 // AuthenticateUser autentica l'utente utilizzando il token JWT
 func AuthenticateUser(token string, db database.AppDatabase) (database.User, error) {
-    // Verifica se il token contiene l'ID dell'utente (esempio)
-    userIDStr := token
+	// Verifica se il token contiene l'ID dell'utente (esempio)
+	userIDStr := token
 
-    // Log per verificare l'ID estratto dal token
-    fmt.Printf("User ID estratto dal token: %s\n", userIDStr)
+	// Log per verificare l'ID estratto dal token
+	log.Printf("User ID estratto dal token: %s\n", userIDStr)
 
-    // Ottieni l'utente dal database usando l'ID estratto dal token
-    user, err := db.GetUserById(userIDStr)
-    if err != nil {
-        // Log dell'errore nel recupero dell'utente
-        fmt.Printf("Errore nel recupero dell'utente: %v\n", err)
-        return database.User{}, fmt.Errorf("user not found: %w", err)
-    }
+	// Ottieni l'utente dal database usando l'ID estratto dal token
+	user, err := db.GetUserById(userIDStr)
+	if err != nil {
+		// Log dell'errore nel recupero dell'utente
+		log.Printf("Errore nel recupero dell'utente: %v\n", err)
+		return database.User{}, fmt.Errorf("user not found: %w", err)
+	}
 
-    // Log dell'utente autenticato
-    fmt.Printf("User autenticato: %+v\n", user)
+	// Log dell'utente autenticato
+	log.Printf("User autenticato: %+v\n", user)
 
-    return user, nil
+	return user, nil
 }

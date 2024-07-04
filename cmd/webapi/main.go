@@ -82,14 +82,14 @@ func run() error {
 	logger.Infof("application initializing")
 
 	// Create photos directory
-	photosDir:= "photos"
+	photosDir := "photos"
 	if _, err := os.Stat(photosDir); os.IsNotExist(err) {
 		err := os.Mkdir(photosDir, 0755)
 		if err != nil {
-		logger.WithError(err).Error("error creating photos directory")
-		return fmt.Errorf("creating photos directory: %w", err)
-	}
-	logger.Infof("photos directory created")
+			logger.WithError(err).Error("error creating photos directory")
+			return fmt.Errorf("creating photos directory: %w", err)
+		}
+		logger.Infof("photos directory created")
 	} else {
 		logger.Infof("photos directory already exists")
 	}

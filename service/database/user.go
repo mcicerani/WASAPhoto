@@ -2,25 +2,26 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
 )
 
-// SetUser crea nuovo user nel database
+// SetUser crea un nuovo utente nel database.
 func (a *appdbimpl) SetUser(name string) error {
 	_, err := a.c.Exec(`INSERT INTO users (username) VALUES (?)`, name)
 	if err != nil {
-		// Controlla se l'errore è dovuto alla violazione di unicità del nome utente
-		if err.Error() == "UNIQUE constraint failed: users.username" {
+		// Controlla se l'errore è dovuto alla violazione di unicità del nome utente.
+		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("username already exists: %w", err)
 		}
 
-		// Altrimenti, gestisci l'errore generico di inserimento utente
+		// Altrimenti, gestisci l'errore generico di inserimento utente.
 		return fmt.Errorf("inserting user: %w", err)
 	}
 
-	// Se l'inserimento ha avuto successo, ritorna nil
+	// Se l'inserimento ha avuto successo, ritorna nil.
 	return nil
 }
 
@@ -35,7 +36,6 @@ func (a *appdbimpl) GetUserByUsername(name string) (User, error) {
 	return user, nil
 }
 
-
 // GetUserById restituisce i dettagli dell'utente con l'ID specificato
 func (a *appdbimpl) GetUserById(iD string) (User, error) {
 	var user User
@@ -45,14 +45,14 @@ func (a *appdbimpl) GetUserById(iD string) (User, error) {
 		return user, fmt.Errorf("converting user ID to integer: %w", err)
 	}
 
-	fmt.Printf("User ID estratto: %d\n", userID) // Log dell'ID estratto
+	log.Printf("User ID estratto: %d\n", userID) // Log dell'ID estratto
 
 	err = a.c.QueryRow(`SELECT * FROM users WHERE ID = ?`, userID).Scan(&user.ID, &user.Username)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			fmt.Println("Nessuna riga trovata per l'ID specificato")
+			log.Println("Nessuna riga trovata per l'ID specificato")
 		} else {
-			fmt.Printf("Errore nella query SQL: %v\n", err) // Log dell'errore SQL
+			log.Printf("Errore nella query SQL: %v\n", err) // Log dell'errore SQL
 		}
 		return user, fmt.Errorf("selecting user: %w", err)
 	}
@@ -87,28 +87,28 @@ func (a *appdbimpl) UpdateUsername(iD string, newname string) error {
 
 // FollowUser crea nella tabella la relazione followed/follower
 func (a *appdbimpl) FollowUser(userID string, followedUserID string) error {
-    UserID, err := strconv.Atoi(userID)
-    if err != nil {
-        return fmt.Errorf("converting user ID to integer: %w", err)
-    }
+	UserID, err := strconv.Atoi(userID)
+	if err != nil {
+		return fmt.Errorf("converting user ID to integer: %w", err)
+	}
 
-    FollowedUserID, err := strconv.Atoi(followedUserID)
-    if err != nil {
-        return fmt.Errorf("converting user ID to integer: %w", err)
-    }
+	FollowedUserID, err := strconv.Atoi(followedUserID)
+	if err != nil {
+		return fmt.Errorf("converting user ID to integer: %w", err)
+	}
 
-    // Log dei valori di userID e followedUserID per debug
-    log.Printf("FollowUser: userID = %d, followedUserID = %d", UserID, FollowedUserID)
+	// Log dei valori di userID e followedUserID per debug
+	log.Printf("FollowUser: userID = %d, followedUserID = %d", UserID, FollowedUserID)
 
-    _, err = a.c.Exec(`INSERT into followers (follower_id, followed_id) VALUES(?, ?)`, UserID, FollowedUserID)
-    if err != nil {
-        return fmt.Errorf("following user: %w", err)
-    }
+	_, err = a.c.Exec(`INSERT into followers (follower_id, followed_id) VALUES(?, ?)`, UserID, FollowedUserID)
+	if err != nil {
+		return fmt.Errorf("following user: %w", err)
+	}
 
-    // Log per vedere quando viene eseguito il follow tra due utenti
-    log.Printf("User %d followed user %d successfully", UserID, FollowedUserID)
+	// Log per vedere quando viene eseguito il follow tra due utenti
+	log.Printf("User %d followed user %d successfully", UserID, FollowedUserID)
 
-    return nil
+	return nil
 }
 
 // UnfollowUser cancella dalla tabella followers la relazione tra i 2 account
@@ -180,53 +180,53 @@ func (a *appdbimpl) GetFollowers(userID string) ([]User, error) {
 
 // GetFollows restituisce i dettagli dei follows in user_profile con username=name
 func (a *appdbimpl) GetFollows(userID string) ([]User, error) {
-    var follows []User
+	var follows []User
 
-    UserID, err := strconv.Atoi(userID)
-    if err != nil {
-        return follows, fmt.Errorf("converting user ID to integer: %w", err)
-    }
+	UserID, err := strconv.Atoi(userID)
+	if err != nil {
+		return follows, fmt.Errorf("converting user ID to integer: %w", err)
+	}
 
-    log.Printf("Getting follows for user ID: %s", userID)
+	log.Printf("Getting follows for user ID: %s", userID)
 
-    rows, err := a.c.Query(`SELECT followed_id FROM followers WHERE follower_id = ?`, UserID)
-    if err != nil {
-        return follows, fmt.Errorf("selecting follows: %w", err)
-    }
+	rows, err := a.c.Query(`SELECT followed_id FROM followers WHERE follower_id = ?`, UserID)
+	if err != nil {
+		return follows, fmt.Errorf("selecting follows: %w", err)
+	}
 
-    defer func(rows *sql.Rows) {
-        err := rows.Close()
-        if err != nil {
-            log.Println("Error closing rows:", err)
-        }
-    }(rows) // Ensure rows are closed after function returns
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}(rows) // Ensure rows are closed after function returns
 
-    for rows.Next() {
-        var followedID int
-        err = rows.Scan(&followedID)
-        if err != nil {
-            return follows, fmt.Errorf("scanning followed ID: %w", err)
-        }
+	for rows.Next() {
+		var followedID int
+		err = rows.Scan(&followedID)
+		if err != nil {
+			return follows, fmt.Errorf("scanning followed ID: %w", err)
+		}
 
-        var followed User
-        // Query per ottenere il nome utente dell'utente seguito
-        err = a.c.QueryRow(`SELECT ID, username FROM users WHERE ID = ?`, followedID).Scan(&followed.ID, &followed.Username)
-        if err != nil {
-            return follows, fmt.Errorf("selecting followed: %w", err)
-        }
+		var followed User
+		// Query per ottenere il nome utente dell'utente seguito
+		err = a.c.QueryRow(`SELECT ID, username FROM users WHERE ID = ?`, followedID).Scan(&followed.ID, &followed.Username)
+		if err != nil {
+			return follows, fmt.Errorf("selecting followed: %w", err)
+		}
 
-        // Log dopo aver aggiunto ciascun utente seguito alla lista follows
-        log.Printf("Added followed user: ID = %d, Username = %s", followed.ID, followed.Username)
+		// Log dopo aver aggiunto ciascun utente seguito alla lista follows
+		log.Printf("Added followed user: ID = %d, Username = %s", followed.ID, followed.Username)
 
-        follows = append(follows, followed)
-    }
+		follows = append(follows, followed)
+	}
 
-    // Check for errors encountered during iteration
-    if err = rows.Err(); err != nil {
-        return nil, fmt.Errorf("iterating rows: %w", err)
-    }
+	// Check for errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating rows: %w", err)
+	}
 
-    return follows, nil
+	return follows, nil
 }
 
 // BanUser aggiunge alla lista dei ban l'utente da seguire
@@ -297,49 +297,48 @@ func (a *appdbimpl) IsBanned(userID string, otherUserID string) (bool, error) {
 
 // GetBans restituisce la lista degli utenti bannati da un determinato utente
 func (a *appdbimpl) GetBans(userID string) ([]User, error) {
-    var bans []User
+	var bans []User
 
-    UserID, err := strconv.Atoi(userID)
-    if err != nil {
-        return bans, fmt.Errorf("converting user ID to integer: %w", err)
-    }
+	UserID, err := strconv.Atoi(userID)
+	if err != nil {
+		return bans, fmt.Errorf("converting user ID to integer: %w", err)
+	}
 
-    rows, err := a.c.Query(`SELECT banned_id FROM bans WHERE user_id = ?`, UserID)
-    if err != nil {
-        return bans, fmt.Errorf("selecting bans: %w", err)
-    }
+	rows, err := a.c.Query(`SELECT banned_id FROM bans WHERE user_id = ?`, UserID)
+	if err != nil {
+		return bans, fmt.Errorf("selecting bans: %w", err)
+	}
 
-    defer func(rows *sql.Rows) {
-        err := rows.Close()
-        if err != nil {
-            log.Println("Error closing rows:", err)
-        }
-    }(rows) // Ensure rows are closed after function returns
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}(rows) // Ensure rows are closed after function returns
 
-    for rows.Next() {
-        var bannedID int
-        err = rows.Scan(&bannedID)
-        if err != nil {
-            return bans, fmt.Errorf("scanning banned ID: %w", err)
-        }
+	for rows.Next() {
+		var bannedID int
+		err = rows.Scan(&bannedID)
+		if err != nil {
+			return bans, fmt.Errorf("scanning banned ID: %w", err)
+		}
 
-        var banned User
-        err = a.c.QueryRow(`SELECT ID, username FROM users WHERE ID = ?`, bannedID).Scan(&banned.ID, &banned.Username)
-        if err != nil {
-            return bans, fmt.Errorf("selecting banned: %w", err)
-        }
+		var banned User
+		err = a.c.QueryRow(`SELECT ID, username FROM users WHERE ID = ?`, bannedID).Scan(&banned.ID, &banned.Username)
+		if err != nil {
+			return bans, fmt.Errorf("selecting banned: %w", err)
+		}
 
-        bans = append(bans, banned)
-    }
+		bans = append(bans, banned)
+	}
 
-    // Check for errors encountered during iteration
-    if err = rows.Err(); err != nil {
-        return nil, fmt.Errorf("iterating rows: %w", err)
-    }
+	// Check for errors encountered during iteration
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating rows: %w", err)
+	}
 
-    return bans, nil
+	return bans, nil
 }
-
 
 // CountFollowersByUserID restituisce il numero di followers di un utente
 func (a *appdbimpl) CountFollowersByUserID(userID string) (int, error) {

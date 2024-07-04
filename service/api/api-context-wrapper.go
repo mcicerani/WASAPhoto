@@ -22,7 +22,7 @@ func (rt *_router) wrap(fn httpRouterHandler) func(http.ResponseWriter, *http.Re
 			return
 		}
 		var ctx = reqcontext.RequestContext{
-			ReqUUID: reqUUID,
+			ReqUUID:  reqUUID,
 			Database: rt.db,
 		}
 

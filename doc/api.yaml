@@ -44,8 +44,10 @@ paths:
 
   /:
     get:
+      tags: ["appStart"]
       summary: Ritorna info sull'app
       description: Ritorna dettagli e informazioni applicazione
+      operationId: homeHandle
       responses:
         "200":
           description: Successo. Informazioni sull'applicazione restituite
@@ -53,10 +55,13 @@ paths:
             application/json:
               schema:
                 type: object
+                description: Schema di risposta contenente informazioni sull'applicazione
                 properties:
                   message:
                     type: string
+                    description: Messaggio di benvenuto dell'applicazione
                     example: Benvenuto nella nostra applicazione!
+
 
 ############## Simplified login ##############
 

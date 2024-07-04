@@ -17,7 +17,7 @@ func (rt *_router) Handler() http.Handler {
 	// User routes
 	rt.router.GET("/users", rt.wrap(rt.searchUser))
 	rt.router.GET("/users/:userId/profile", rt.wrap(rt.getUserProfile))
-	rt.router.PUT("/users/:userId/profile/edit", rt.wrap(rt.setMyUsername))
+	rt.router.PUT("/users/:userId/profile/edit", rt.wrap(rt.setMyUserName))
 	rt.router.GET("/users/:userId/stream", rt.wrap(rt.getMyStream))
 
 	// Photos routes
@@ -36,9 +36,9 @@ func (rt *_router) Handler() http.Handler {
 
 	// Follows routes
 	rt.router.GET("/users/:userId/follows", rt.wrap(rt.getUserFollows))
-	rt.router.GET("/users/:userId/followers", rt.wrap(rt.getUserFollowers))
 	rt.router.POST("/users/:userId/follows/:followedId", rt.wrap(rt.followUser))
 	rt.router.DELETE("/users/:userId/follows/:followedId", rt.wrap(rt.unfollowUser))
+	rt.router.GET("/users/:userId/followers", rt.wrap(rt.getUserFollowers))
 
 	// Ban routes
 	rt.router.GET("/users/:userId/bans", rt.wrap(rt.getUserBans))
