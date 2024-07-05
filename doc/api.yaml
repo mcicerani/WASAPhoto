@@ -656,7 +656,7 @@ paths:
           content:
             application/json:
               schema:
-              description: Indica se utente è bannato con true o false
+                description: Indica se utente è bannato con true o false
                 type: object
                 properties:
                   isBanned:
