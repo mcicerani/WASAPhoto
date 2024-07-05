@@ -1,16 +1,30 @@
 <script setup>
 import { RouterLink, RouterView, useRouter } from 'vue-router'
-import { ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 
-const userId = ref(null);
+const userId = ref(localStorage.getItem('loggedInUserId'));
 const router = useRouter();
 
-const token = localStorage.getItem('token');
+const token = ref(localStorage.getItem('token'));
 
-if (token) {
+function loadUserIdFromToken() {
+  const token = localStorage.getItem('token');
+  if (token) {
+    userId.value = token.split(' ')[1]; // Extract user ID from token
+    console.log("User ID extracted from token:", userId.value);
+  } else {
+    console.error("Token not found in localStorage");
+  }
+}
+
+if (token.value) {
   onMounted(() => {
-    const loggedInUserId = localStorage.getItem('loggedInUserId');
-    router.push(`/users/${loggedInUserId}/profile`); // Usa il template literal corretto
+    loadUserIdFromToken();
+    if (userId.value) {
+      router.push(`/users/${userId.value}/profile`); // Correct template literal
+    } else {
+      router.push('/session');
+    }
   });
 
   watch(router.currentRoute, () => {
@@ -20,15 +34,7 @@ if (token) {
   console.log("Token not found in localStorage");
 }
 
-function loadUserIdFromToken() {
-  const token = localStorage.getItem('token');
-  if (token) {
-    userId.value = token.split(' ')[1]; // Estrai l'ID dell'utente dal token
-    console.log("User ID extracted from token:", userId.value);
-  } else {
-    console.error("Token not found in localStorage");
-  }
-}
+const isLoggedIn = computed(() => !!token.value);
 
 function logout() {
   localStorage.removeItem('token');
@@ -47,7 +53,7 @@ console.log("Component setup complete, userId:", userId.value);
     <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
-    <button class="logout" @click="logout">Logout</button>
+    <button v-if="isLoggedIn" class="logout" @click="logout">Logout</button>
   </header>
 
   <div class="container-fluid">
@@ -56,15 +62,15 @@ console.log("Component setup complete, userId:", userId.value);
         <div class="position-sticky pt-3 sidebar-sticky">
           <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
           </h6>
-          <ul class="nav flex-column">
+          <ul v-if="isLoggedIn" class="nav flex-column">
             <li class="nav-item">
-              <RouterLink :to="`/users/${userId}/profile`" class="nav-link">
+              <RouterLink :to="`/users/${userId.value}/profile`" class="nav-link">
                 <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#home"/></svg>
                 Profilo
               </RouterLink>
             </li>
             <li class="nav-item">
-              <RouterLink :to="`/users/${userId}/stream`" class="nav-link">
+              <RouterLink :to="`/users/${userId.value}/stream`" class="nav-link">
                 <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#layout"/></svg>
                 Stream
               </RouterLink>
