@@ -516,25 +516,13 @@ paths:
       description: Verifica se un utente segue un altro utente.
       summary: Check if user is followed
       operationId: getIsFollowed
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          description: ID dell'utente che effettua la verifica.
-          schema:
-            type: string
-        - name: followedId
-          in: path
-          required: true
-          description: ID dell'utente che si vuole verificare se è seguito.
-          schema:
-            type: string
       responses:
         "200":
           description: Successo. Restituisce true se l'utente è seguito, false altrimenti.
           content:
             application/json:
               schema:
+                description: indica se utente è seguito con true o false
                 type: object
                 properties:
                   isFollowed:
@@ -668,6 +656,7 @@ paths:
           content:
             application/json:
               schema:
+              description: Indica se utente è bannato con true o false
                 type: object
                 properties:
                   isBanned:
