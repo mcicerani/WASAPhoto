@@ -23,11 +23,14 @@ export default {
     async searchUsers() {
       try {
         const token = localStorage.getItem('token');
+        const loggedInUserId = localStorage.getItem('loggedInUserId');
+
         if (!token) {
-          console.error('Token non trovato nel localStorage');
+          console.log('Token non trovato nel localStorage');
           return;
         }
 
+        // Search for the user by username
         const response = await api.get(`/users?username=${this.search}`, {
           headers: {
             Authorization: `${token}`,
@@ -36,9 +39,22 @@ export default {
         const user = response.data;
         if (user) {
           this.userProfile = user;
-          this.$router.push(`/users/${user.id}/profile`);
+
+          // Check if the logged-in user is banned by the searched user
+          const isBannedResponse = await api.get(`/users/${loggedInUserId}/bans/${user.id}`, {
+            headers: {
+              Authorization: `${token}`,
+            },
+          });
+
+          if (isBannedResponse.data.isBanned) {
+            alert(`Impossibile visualizzare il profilo cercato! Sei stato bannato da ${user.username}!`);
+          } else {
+            this.$router.push(`/users/${user.id}/profile`);
+          }
         } else {
           this.userProfile = null;
+          alert("Nessun Utente trovato con questo nome");
         }
         this.searchExecuted = true;
       } catch (error) {
