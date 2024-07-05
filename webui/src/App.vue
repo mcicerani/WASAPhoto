@@ -2,14 +2,14 @@
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { ref, onMounted, watch } from 'vue'
 
-const loggedInUserId = ref(null);
+const userId = ref(null);
 const router = useRouter();
 
 const token = localStorage.getItem('token');
 
 if (token) {
   onMounted(() => {
-    const loggedInUserId = loadUserIdFromToken();
+    const loggedInUserId = localStorage.getItem('loggedInUserId');
     router.push(`/users/${loggedInUserId}/profile`); // Usa il template literal corretto
   });
 
@@ -23,10 +23,10 @@ if (token) {
 function loadUserIdFromToken() {
   const token = localStorage.getItem('token');
   if (token) {
-    loggedInUserId.value = token.split(' ')[1]; // Estrai l'ID dell'utente dal token
-    console.log("User ID extracted from token:", loggedInUserId.value);
+    userId.value = token.split(' ')[1]; // Estrai l'ID dell'utente dal token
+    console.log("User ID extracted from token:", userId.value);
   } else {
-    console.log("Token not found in localStorage");
+    console.error("Token not found in localStorage");
   }
 }
 
@@ -38,7 +38,7 @@ function logout() {
   router.push('/session');
 }
 
-console.log("Component setup complete, userId:", loggedInUserId.value);
+console.log("Component setup complete, userId:", userId.value);
 </script>
 
 <template>
@@ -58,13 +58,13 @@ console.log("Component setup complete, userId:", loggedInUserId.value);
           </h6>
           <ul class="nav flex-column">
             <li class="nav-item">
-              <RouterLink :to="`/users/${loggedInUserId}/profile`" class="nav-link">
+              <RouterLink :to="`/users/${userId}/profile`" class="nav-link">
                 <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#home"/></svg>
                 Profilo
               </RouterLink>
             </li>
             <li class="nav-item">
-              <RouterLink :to="`/users/${loggedInUserId}/stream`" class="nav-link">
+              <RouterLink :to="`/users/${userId}/stream`" class="nav-link">
                 <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#layout"/></svg>
                 Stream
               </RouterLink>
