@@ -36,7 +36,7 @@ func (a *appdbimpl) GetUserByUsername(name string) (User, error) {
 	return user, nil
 }
 
-// GetUserById restituisce i dettagli dell'utente con l'ID specificato
+// GetUserById returns the details of the user with the specified ID
 func (a *appdbimpl) GetUserById(iD string) (User, error) {
 	var user User
 
@@ -47,10 +47,11 @@ func (a *appdbimpl) GetUserById(iD string) (User, error) {
 
 	log.Printf("User ID estratto: %d\n", userID) // Log dell'ID estratto
 
-	err = a.c.QueryRow(`SELECT * FROM users WHERE ID = ?`, userID).Scan(&user.ID, &user.Username)
+	err = a.c.QueryRow(`SELECT ID, Username FROM users WHERE ID = ?`, userID).Scan(&user.ID, &user.Username)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			log.Println("Nessuna riga trovata per l'ID specificato")
+			return user, nil // Return nil error for no rows
 		} else {
 			log.Printf("Errore nella query SQL: %v\n", err) // Log dell'errore SQL
 		}

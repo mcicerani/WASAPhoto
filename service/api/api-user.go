@@ -559,7 +559,9 @@ func (rt *_router) getIsBanned(w http.ResponseWriter, r *http.Request, ps httpro
 	// Imposta l'intestazione Content-Type e scrivi la risposta
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonBytes)
+	if _, err := w.Write(jsonBytes); err != nil {
+		log.Printf("failed to write response: %v", err)
+	}
 }
 
 // getIsFollwed verifica se l'utente segue un altro utente
@@ -605,5 +607,7 @@ func (rt *_router) getIsFollowed(w http.ResponseWriter, r *http.Request, ps http
 	// Imposta l'intestazione Content-Type e scrivi la risposta
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonBytes)
+	if _, err := w.Write(jsonBytes); err != nil {
+		log.Printf("failed to write response: %v", err)
+	}
 }
