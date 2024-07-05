@@ -35,6 +35,19 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
+	// Create photos directory
+	photosDir := "photos"
+	if _, err := os.Stat(photosDir); os.IsNotExist(err) {
+		err := os.Mkdir(photosDir, 0755)
+		if err != nil {
+			logger.WithError(err).Error("error creating photos directory")
+			return fmt.Errorf("creating photos directory: %w", err)
+		}
+		logger.Infof("photos directory created")
+	} else {
+		logger.Infof("photos directory already exists")
+	}
+
 	// Ottenere il file dall'input del modulo
 	file, _, err := r.FormFile("file")
 	if err != nil {
