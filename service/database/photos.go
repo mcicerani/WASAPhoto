@@ -11,19 +11,28 @@ import (
 
 /*SetPhoto salva la foto in locale e inserisce dati in photos (id, user_id, url, timestamp) */
 
-func (a *appdbimpl) SetPhoto(userID string, url string) error {
+func (a *appdbimpl) SetPhoto(userID string, image_data []byte, timestamp string) (int64, error) {
 
-	UserID, err := strconv.Atoi(userID)
+	userId, err := strconv.Atoi(userID)
+	log.Printf("%d",userId)
 	if err != nil {
-		return fmt.Errorf("converting user ID to integer: %w", err)
+		return 0, fmt.Errorf("converting user ID to integer: %w", err)
 	}
 
-	_, err = a.c.Exec(`INSERT INTO photos (user_id, url) VALUES (?, ?)`, UserID, url)
+	result, err := a.c.Exec(`INSERT INTO photos (user_id, image_data, timestamp) VALUES (?, ?, ?)`, userId, image_data, timestamp)
+	log.Printf("%d,%s", userId, timestamp)
 	if err != nil {
-		return fmt.Errorf("inserting photo: %w", err)
+		return 0, fmt.Errorf("inserting photo: %w", err)
 	}
 
-	return nil
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("getting last insert ID: %w", err)
+	}
+
+	log.Printf("Inserted photo for user ID %d, timestamp: %s", userId, timestamp)
+
+	return id, nil
 }
 
 // GetPhotoByID restituisce i dettagli della foto in photos con photos_id=id

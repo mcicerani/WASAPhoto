@@ -16,42 +16,50 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// uploadPhotoHandler carica una foto in locale e salva url nel database
-
 func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 	// Ottenere l'ID dell'utente dalla richiesta
 	userID := ps.ByName("userId")
 
+	// Log per mostrare che la richiesta di upload è stata ricevuta
+	log.Printf("Upload request received for user ID: %s\n", userID)
+
 	token, err := reqcontext.ExtractBearerToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		log.Println("Error extracting Bearer token:", err)
 		return
 	}
 
-	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	// Autenticare l'utente utilizzando il token
+	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		log.Println("Error authenticating user:", err)
 		return
 	}
 
-	// Create photos directory
-	photosDir := "photos"
+	// Log per mostrare che l'autenticazione è avvenuta con successo
+	log.Printf("User authenticated: %s (ID: %d)\n", user.Username, user.ID)
+
+	// Creare la directory "photos" se non esiste
+	photosDir := "./photos"
 	if _, err := os.Stat(photosDir); os.IsNotExist(err) {
 		err := os.Mkdir(photosDir, 0755)
 		if err != nil {
-			logger.WithError(err).Error("error creating photos directory")
-			return fmt.Errorf("creating photos directory: %w", err)
+			log.Printf("Error creating photos directory")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
 		}
-		logger.Infof("photos directory created")
+		log.Printf("Photos directory created")
 	} else {
-		logger.Infof("photos directory already exists")
+		log.Printf("Photos directory already exists")
 	}
 
 	// Ottenere il file dall'input del modulo
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
+		log.Println("Error retrieving file from form data:", err)
 		return
 	}
 
@@ -68,18 +76,17 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	filename := fmt.Sprintf("%s_%s.jpg", userID, timestamp)
 
 	// Salvataggio della foto nel sistema di archiviazione locale
-
-	// Creare un nuovo file nel percorso di archiviazione locale
-	photoFile, err := os.Create(fmt.Sprintf("WASAphoto/photos/%s", filename))
+	photoFilePath := fmt.Sprintf("./photos/%s", filename)
+	photoFile, err := os.Create(photoFilePath)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Println("Error creating photo file:", err)
 		return
 	}
-
 	defer func(photoFile *os.File) {
 		err := photoFile.Close()
 		if err != nil {
-			log.Println("Error closing file:", err)
+			log.Println("Error closing photo file:", err)
 			return // Ignorare l'errore
 		}
 	}(photoFile)
@@ -88,27 +95,43 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	_, err = io.Copy(photoFile, file)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Println("Error copying file contents:", err)
 		return
 	}
 
-	// Costruire l'URL della foto utilizzando l'ID dell'utente e il timestamp
-	photoURL := fmt.Sprintf("WASAPhoto/photos/%s", filename)
+	// Log per mostrare che il file è stato caricato con successo
+	log.Printf("File uploaded successfully: %s\n", photoFilePath)
 
-	// Inserire l'URL della foto nel database
-	err = ctx.Database.SetPhoto(userID, photoURL)
+	// Costruire l'URL della foto utilizzando l'ID dell'utente e il timestamp
+	photoURL := fmt.Sprintf("./photos/%s", filename)
+
+	// Inserire l'URL della foto nel database e ottenere l'ID della foto inserita
+	photoID, err := ctx.Database.SetPhoto(userID, photoURL, timestamp)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Println("Error saving photo URL to database:", err)
 		return
+	}
+
+	// Costruire l'oggetto Photo da restituire come risposta JSON
+	photo := database.Photo{
+		ID:        int(photoID), // Converto int64 a int
+		UserID:    user.ID,      // Utilizzo user.ID come ID dell'utente autenticato
+		URL:       photoURL,
+		Timestamp: timestamp,
 	}
 
 	// Creare la risposta JSON contenente i dettagli della foto
-	photo := database.Photo{UserID: ctx.User.ID, URL: photoURL}
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(photo)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Println("Error encoding JSON response:", err)
 		return
 	}
+
+	// Log per mostrare che la risposta JSON è stata inviata correttamente
+	log.Println("JSON response sent successfully")
 }
 
 // deletePhotoHandler elimina una foto dal sistema di archiviazione locale e dal database
@@ -132,7 +155,7 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -145,7 +168,7 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	if photo.UserID != ctx.User.ID {
+	if photo.UserID != user.ID {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -154,7 +177,7 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	fileName := filepath.Base(photo.URL)
 
 	// Eliminare la foto dal sistema di archiviazione locale
-	err = os.Remove(fmt.Sprintf("WASAphoto/photos/%s", fileName))
+	err = os.Remove(fmt.Sprintf("./photos/%s", fileName))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return

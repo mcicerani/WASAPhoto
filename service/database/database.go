@@ -57,7 +57,7 @@ type AppDatabase interface {
 	IsFollowed(userID string, otherUserID string) (bool, error)
 	CountFollowersByUserID(userID string) (int, error)
 	CountFollowsByUserID(userID string) (int, error)
-	SetPhoto(userId string, url string) error
+	SetPhoto(userId string, image_data []byte, timestamp string) (int64, error)
 	GetPhotoByID(photoID string) (Photo, error)
 	DeletePhoto(photoID string) error
 	SetComment(userId string, photoID string, comment string) error
@@ -110,8 +110,8 @@ func New(db *sql.DB) (AppDatabase, error) {
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS photos (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,
-		url TEXT NOT NULL,
-		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+		image_data BLOB,
+		timestamp DATETIME NOT NULL,
 		FOREIGN KEY (user_id) REFERENCES users(id)
 	)`)
 	if err != nil {
