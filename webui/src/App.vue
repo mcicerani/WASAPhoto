@@ -1,50 +1,59 @@
 <script setup>
-import { RouterLink, RouterView, useRouter } from 'vue-router'
-import { computed, ref, onMounted, watch } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
 const userId = ref(localStorage.getItem('loggedInUserId'));
-const router = useRouter();
-
 const token = ref(localStorage.getItem('token'));
+const username = ref(localStorage.getItem('username'));
 
-function loadUserIdFromToken() {
-  const token = localStorage.getItem('token');
-  if (token) {
-    userId.value = token.split(' ')[1]; // Extract user ID from token
-    console.log("User ID extracted from token:", userId.value);
-  } else {
-    console.error("Token not found in localStorage");
-  }
-}
-
-if (token.value) {
-  onMounted(() => {
-    loadUserIdFromToken();
-    if (userId.value) {
-      router.push(`/users/${userId.value}/profile`); // Correct template literal
-    } else {
-      router.push('/session');
-    }
-  });
-
-  watch(router.currentRoute, () => {
-    loadUserIdFromToken();
-  });
-} else {
-  console.log("Token not found in localStorage");
-}
+const router = useRouter();
 
 const isLoggedIn = computed(() => !!token.value);
 
+function handleLoginSuccess(payload) {
+  console.log('handleLoginSuccess called with payload:', payload); // Debugging
+
+  username.value = payload.username;
+  userId.value = payload.userId;
+  token.value = payload.token;
+
+  localStorage.setItem('username', payload.username);
+  localStorage.setItem('loggedInUserId', payload.userId);
+  localStorage.setItem('token', payload.token);
+
+  console.log('Navigating to profile:', `/users/${userId.value}/profile`);
+  router.push(`/users/${userId.value}/profile`);
+}
+
 function logout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('username');
-  localStorage.removeItem('loggedInUserId');
-  console.log("User logged out");
+  username.value = '';
+  userId.value = '';
+  token.value = '';
+  localStorage.clear();
   router.push('/session');
 }
 
-console.log("Component setup complete, userId:", userId.value);
+watch(token, (newToken) => {
+  if (newToken) {
+    localStorage.setItem('token', newToken);
+  } else {
+    localStorage.removeItem('token');
+  }
+});
+
+watch(userId, (newUserId) => {
+  console.log('userId updated to:', newUserId); // Debugging
+});
+
+onMounted(() => {
+  if (isLoggedIn.value && userId.value) {
+    console.log('User already logged in, redirecting to profile:', `/users/${userId.value}/profile`);
+    router.push(`/users/${userId.value}/profile`);
+  } else {
+    console.log('User not logged in, redirecting to session');
+    router.push('/session');
+  }
+});
 </script>
 
 <template>
@@ -60,24 +69,28 @@ console.log("Component setup complete, userId:", userId.value);
     <div class="row">
       <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
         <div class="position-sticky pt-3 sidebar-sticky">
-          <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
-          </h6>
           <ul v-if="isLoggedIn" class="nav flex-column">
             <li class="nav-item">
-              <RouterLink :to="`/users/${userId.value}/profile`" class="nav-link">
-                <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#home"/></svg>
+              <RouterLink :to="`/users/${userId}/profile`" class="nav-link">
+                <svg class="feather">
+                  <use href="/feather-sprite-v4.29.0.svg#home"/>
+                </svg>
                 Profilo
               </RouterLink>
             </li>
             <li class="nav-item">
-              <RouterLink :to="`/users/${userId.value}/stream`" class="nav-link">
-                <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#layout"/></svg>
+              <RouterLink :to="`/users/${userId}/stream`" class="nav-link">
+                <svg class="feather">
+                  <use href="/feather-sprite-v4.29.0.svg#layout"/>
+                </svg>
                 Stream
               </RouterLink>
             </li>
             <li class="nav-item">
               <RouterLink to="/users" class="nav-link">
-                <svg class="feather"><use href="/feather-sprite-v4.29.0.svg#key"/></svg>
+                <svg class="feather">
+                  <use href="/feather-sprite-v4.29.0.svg#key"/>
+                </svg>
                 Ricerca Utenti
               </RouterLink>
             </li>
@@ -86,12 +99,12 @@ console.log("Component setup complete, userId:", userId.value);
       </nav>
 
       <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-        <RouterView />
+        <router-view @login-success="handleLoginSuccess" />
       </main>
     </div>
   </div>
 </template>
 
 <style>
-/* Aggiungi i tuoi stili personalizzati qui */
+/* Add your custom styles here */
 </style>
