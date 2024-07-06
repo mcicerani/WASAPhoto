@@ -65,7 +65,8 @@
   
   /* Stili per il bottone */
   button {
-    padding: 2rem;
+    width: 10rem;
+    padding: 1rem;
     background-color: #007bff;
     color: white;
     border: none;
