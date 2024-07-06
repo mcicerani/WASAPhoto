@@ -42,7 +42,7 @@
       <div class="col-md-12">
         <ul>
           <li v-for="photo in userProfile.Photos" :key="photo.id">
-            <img :src="photo.url" :alt="`Photo ${photo.id}`">
+            <img :src="'data:image/jpeg;base64,' + photo.image_data" alt="User Photo">
           </li>
         </ul>
       </div>

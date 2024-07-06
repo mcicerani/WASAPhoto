@@ -2,13 +2,9 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
+	"io/ioutil"
 	"log"
-	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
@@ -41,84 +37,52 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	// Log per mostrare che l'autenticazione è avvenuta con successo
 	log.Printf("User authenticated: %s (ID: %d)\n", user.Username, user.ID)
 
-	// Creare la directory "photos" se non esiste
-	photosDir := "./photos"
-	if _, err := os.Stat(photosDir); os.IsNotExist(err) {
-		err := os.Mkdir(photosDir, 0755)
-		if err != nil {
-			log.Printf("Error creating photos directory")
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		log.Printf("Photos directory created")
-	} else {
-		log.Printf("Photos directory already exists")
+	// Verifica che il metodo di richiesta sia POST e che il contenuto sia di tipo multipart/form-data
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
 	}
 
-	// Ottenere il file dall'input del modulo
-	file, _, err := r.FormFile("file")
+	err = r.ParseMultipartForm(10 << 20) // 10 MB max
+	if err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		log.Println("Error parsing multipart form:", err)
+		return
+	}
+
+	file, _, err := r.FormFile("image")
 	if err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		log.Println("Error retrieving file from form data:", err)
 		return
 	}
+	defer file.Close()
 
-	defer func(file multipart.File) {
-		err := file.Close()
-		if err != nil {
-			log.Println("Error closing file:", err)
-			return // Ignorare l'errore
-		}
-	}(file)
+	// Leggi i dati del file in un byte slice
+	imageData, err := ioutil.ReadAll(file)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Println("Error reading file contents:", err)
+		return
+	}
 
-	// Generare un nome di file univoco basato sull'ID dell'utente e sul timestamp
+	log.Printf("Received image data length: %d", len(imageData))
+
+	// Salvataggio dell'immagine nel database e ottenimento dell'ID della foto
 	timestamp := time.Now().Format("20060102150405") // Formato timestamp: YYYYMMDDHHmmSS
-	filename := fmt.Sprintf("%s_%s.jpg", userID, timestamp)
-
-	// Salvataggio della foto nel sistema di archiviazione locale
-	photoFilePath := fmt.Sprintf("./photos/%s", filename)
-	photoFile, err := os.Create(photoFilePath)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		log.Println("Error creating photo file:", err)
-		return
-	}
-	defer func(photoFile *os.File) {
-		err := photoFile.Close()
-		if err != nil {
-			log.Println("Error closing photo file:", err)
-			return // Ignorare l'errore
-		}
-	}(photoFile)
-
-	// Copiare il contenuto del file caricato nel file di archiviazione locale
-	_, err = io.Copy(photoFile, file)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		log.Println("Error copying file contents:", err)
-		return
-	}
-
-	// Log per mostrare che il file è stato caricato con successo
-	log.Printf("File uploaded successfully: %s\n", photoFilePath)
-
-	// Costruire l'URL della foto utilizzando l'ID dell'utente e il timestamp
-	photoURL := fmt.Sprintf("./photos/%s", filename)
-
-	// Inserire l'URL della foto nel database e ottenere l'ID della foto inserita
-	photoID, err := ctx.Database.SetPhoto(userID, photoURL, timestamp)
+	photoID, err := ctx.Database.SetPhoto(userID, imageData, timestamp)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Println("Error saving photo URL to database:", err)
 		return
 	}
 
-	// Costruire l'oggetto Photo da restituire come risposta JSON
+	// Costruisci l'oggetto Photo da restituire come risposta JSON
 	photo := database.Photo{
-		ID:        int(photoID), // Converto int64 a int
-		UserID:    user.ID,      // Utilizzo user.ID come ID dell'utente autenticato
-		URL:       photoURL,
-		Timestamp: timestamp,
+		ID:         int(photoID),
+		UserID:     user.ID, // Utilizzo user.ID come ID dell'utente autenticato
+		ImageData:  imageData,
+		Timestamp:  timestamp,
 	}
 
 	// Creare la risposta JSON contenente i dettagli della foto
@@ -137,105 +101,111 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 // deletePhotoHandler elimina una foto dal sistema di archiviazione locale e dal database
 
 func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+    // Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
+    userID := ps.ByName("userId")
+    photoID := ps.ByName("photosId")
 
-	// Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
-	userID := ps.ByName("userId")
-	photoID := ps.ByName("photoId")
+    // Log per mostrare i parametri ricevuti
+    log.Printf("Deleting photo with userId: %s, photosId: %s\n", userID, photoID)
 
-	// Verificare che l'ID dell'utente e l'ID della foto siano validi
-	if userID == "" || photoID == "" {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
+    // Verificare che l'ID dell'utente e l'ID della foto siano validi
+    if userID == "" || photoID == "" {
+        log.Println("Bad Request: Empty userId or photosId")
+        http.Error(w, "Bad Request", http.StatusBadRequest)
+        return
+    }
 
-	token, err := reqcontext.ExtractBearerToken(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+    token, err := reqcontext.ExtractBearerToken(r)
+    if err != nil {
+        log.Println("Unauthorized: Failed to extract token")
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
 
-	// Autentica l'utente utilizzando il token
-	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+    // Autentica l'utente utilizzando il token
+    user, err := reqcontext.AuthenticateUser(token, ctx.Database)
+    if err != nil {
+        log.Println("Unauthorized: Authentication failed")
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
 
-	// Verificare se l'utente possiede la foto
-	photo, err := ctx.Database.GetPhotoByID(photoID)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    // Verificare se l'utente possiede la foto
+    photo, err := ctx.Database.GetPhotoByID(photoID)
+    if err != nil {
+        log.Printf("Internal Server Error: Failed to retrieve photo with photoId: %s\n", photoID)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	if photo.UserID != user.ID {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+    if photo.UserID != user.ID {
+        log.Println("Unauthorized: User does not own the photo")
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
 
-	// Ricavare il nome del file dall'URL della foto
-	fileName := filepath.Base(photo.URL)
+    // Eliminare la foto dal database
+    err = ctx.Database.DeletePhoto(photoID)
+    if err != nil {
+        log.Printf("Internal Server Error: Failed to delete photo with photoId: %s\n", photoID)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	// Eliminare la foto dal sistema di archiviazione locale
-	err = os.Remove(fmt.Sprintf("./photos/%s", fileName))
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	// Eliminare la foto dal database
-	err = ctx.Database.DeletePhoto(photoID)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	// Rispondere con lo stato di successo
-	w.WriteHeader(http.StatusOK)
+    // Rispondere con lo stato di successo
+    w.WriteHeader(http.StatusOK)
+    log.Printf("Photo deleted successfully with photoId: %s\n", photoID)
 }
 
 // getPhotoHandler ottiene i dettagli di una foto dal database
-
 func (rt *_router) getPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+    // Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
+    userID := ps.ByName("userId")
+    photoID := ps.ByName("photosId")
 
-	// Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
-	userID := ps.ByName("userId")
-	photoID := ps.ByName("photoId")
+    // Verificare che l'ID dell'utente e l'ID della foto siano validi
+    if userID == "" || photoID == "" {
+        http.Error(w, "Bad Request", http.StatusBadRequest)
+        log.Println("Bad Request: Empty userID or photosID")
+        return
+    }
 
-	// Verificare che l'ID dell'utente e l'ID della foto siano validi
-	if userID == "" || photoID == "" {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
+    token, err := reqcontext.ExtractBearerToken(r)
+    if err != nil {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        log.Printf("Unauthorized: %v\n", err)
+        return
+    }
 
-	token, err := reqcontext.ExtractBearerToken(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+    // Autentica l'utente utilizzando il token
+    _, err = reqcontext.AuthenticateUser(token, ctx.Database)
+    if err != nil {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        log.Printf("Unauthorized: %v\n", err)
+        return
+    }
 
-	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+    // Ottenere i dettagli della foto dal database
+    photo, err := ctx.Database.GetPhotoByID(photoID)
+    if err != nil {
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        log.Printf("Internal Server Error: %v\n", err)
+        return
+    }
 
-	// Ottenere i dettagli della foto dal database
-	photo, err := ctx.Database.GetPhotoByID(photoID)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    // Log per indicare il successo nel recupero dei dettagli della foto
+    log.Printf("Photo details fetched successfully: %v\n", photo)
 
-	// Creare la risposta JSON contenente i dettagli della foto
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(photo)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    // Creare la risposta JSON contenente i dettagli della foto
+    w.Header().Set("Content-Type", "application/json")
+    err = json.NewEncoder(w).Encode(photo)
+    if err != nil {
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        log.Printf("Error encoding JSON response: %v\n", err)
+        return
+    }
 }
+
 
 // likePhotoHandler aggiunge un like a una foto nel database
 func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
