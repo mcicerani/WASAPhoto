@@ -40,8 +40,9 @@
 
     <div class="row mt-4">
       <div class="col-md-12">
-        <ul>
-          <li v-for="photo in userProfile.Photos" :key="photo.id">
+        <ul class="listaFoto">
+          <!-- Utilizza un indice per controllare quando creare una nuova riga -->
+          <li v-for="(photo, index) in userProfile.Photos" :key="photo.id" :class="{'new-row': index % 3 === 0}">
             <img :src="'data:image/jpeg;base64,' + photo.image_data" alt="User Photo">
           </li>
         </ul>
@@ -49,6 +50,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import api from "@/services/axios";
@@ -206,5 +208,31 @@ export default {
     color: white;
 
   }
+
+  /* Stile per la lista delle foto */
+  .listaFoto {
+    display: flex;
+    flex-wrap: wrap; /* Per consentire il wrap delle immagini */
+    justify-content: center; /* Centra le righe */
+    padding: 0;
+    list-style-type: none;
+  }
+
+  /* Stile per ogni singola immagine */
+  .listaFoto li {
+    width: 30%; /* Ogni immagine occupa il 30% della larghezza della riga */
+    margin: 0.5rem; /* Spaziatura tra le immagini */
+    box-sizing: border-box; /* Include il padding e il bordo nel calcolo della larghezza */
+  }
+
+  .listaFoto li.new-row {
+    clear: both; /* Pulisce ogni nuova riga */
+  }
+
+  .listaFoto li img {
+    width: 100%;
+    display: block; /* Impedisce la creazione di spazi bianchi */
+  }
+
 
 </style>
