@@ -48,6 +48,11 @@
         </ul>
       </div>
     </div>
+    <div class="row mt-4">
+      <div class="col-md-12 text-center">
+        <FileUpload @photo-uploaded="addPhoto" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -55,10 +60,12 @@
 <script>
 import api from "@/services/axios";
 import { RouterLink } from "vue-router";
+import FileUpload from "@/components/FileUpload.vue"
 
 export default {
   components: {
-    RouterLink
+    RouterLink,
+    FileUpload
   },
   data() {
     return {
@@ -174,6 +181,10 @@ export default {
       } catch (error) {
         console.error('Error toggling ban:', error);
       }
+    },
+    addPhotoToProfile(photo) {
+      this.userProfile.Photos.push(photo);
+      this.userProfile.numPhotos++;
     }
   }
 };
