@@ -298,6 +298,47 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	w.WriteHeader(http.StatusOK)
 }
 
+// GetPhotoLike ritorna lista likes a una photo
+func (rt *_router) getPhotoLikes(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+	// Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
+	userID := ps.ByName("userId")
+	photoID := ps.ByName("photosId")
+
+	// Verificare che l'ID dell'utente e l'ID della foto siano validi
+	if userID == "" || photoID == "" {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Ottenere i likes della foto dal database
+	comments, err := ctx.Database.GetLikesByPhotoID(photoID)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Creare la risposta JSON contenente i commenti della foto
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(comments)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+}
+
 // commentPhotoHandler aggiunge un commento a una foto nel database
 func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
