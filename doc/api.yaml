@@ -340,6 +340,40 @@ paths:
           $ref: "#/components/responses/LikePhoto"
         "401":
           $ref: '#/components/responses/UnauthorizedError'
+    get:
+      security:
+      - bearerAuth: []
+      tags: ["likes"]
+      description: get all the photo likes
+      summary: return photos like
+      operationId: getPhotoLikes
+      responses:
+        "200":
+          description: successfully retrieve likes
+          content:
+            application/json:
+              schema:
+                description: list of likes
+                type: object
+                properties:
+                  comments:
+                    description: list of likes
+                    type: array
+                    minItems: 0
+                    maxItems: 1000
+                    items: 
+                      $ref: "#/components/schemas/Comment"
+              examples:
+                example:
+                  value:
+                    likes:
+                      - likesid: "123"
+                        userId: "1"
+                        photoid: "2"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404": 
+          $ref: "#/components/responses/UserNotFound"       
   
   /users/{userId}/photos/{photosId}/likes/{likeId}:
     parameters:
