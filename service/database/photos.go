@@ -102,7 +102,9 @@ func (a *appdbimpl) SetComment(userID string, photoID string, comment string) er
 		return fmt.Errorf("converting photo ID to integer: %w", err)
 	}
 
-	_, err = a.c.Exec(`INSERT INTO comments (user_id, photo_id, comment_text) VALUES (?, ?, ?)`, UserID, PhotoID, comment)
+	timestamp := time.Now().Format("20060102150405") // Formato timestamp: YYYYMMDDHHmmSS
+
+	_, err = a.c.Exec(`INSERT INTO comments (user_id, photo_id, text, timestamp) VALUES (?, ?, ?, ?)`, UserID, PhotoID, comment, timestamp)
 	if err != nil {
 		return fmt.Errorf("inserting comment: %w", err)
 	}

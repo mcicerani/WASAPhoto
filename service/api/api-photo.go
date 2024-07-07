@@ -212,7 +212,7 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 
 	// Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
 	userID := ps.ByName("userId")
-	photoID := ps.ByName("photoId")
+	photoID := ps.ByName("photosId")
 
 	// Verificare che l'ID dell'utente e l'ID della foto siano validi
 	if userID == "" || photoID == "" {
@@ -249,25 +249,27 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 
 	// Ottenere l'ID dell'utente, l'ID della foto e l'ID del like dalla richiesta
 	userID := ps.ByName("userId")
-	photoID := ps.ByName("photoId")
-	likeID := ps.ByName("likeId")
+	photoID := ps.ByName("photosId")
+	likeID := ps.ByName("likesId")
 
-	// Verificare che l'ID dell'utente, l'ID della foto e l'ID del like siano validi
-	if userID == "" || photoID == "" || likeID == "" {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
-
+	
 	token, err := reqcontext.ExtractBearerToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-
+	
 	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	
+	// Verificare che l'ID dell'utente, l'ID della foto e l'ID del like siano validi
+	if userID == "" || photoID == "" || likeID == "" {
+		log.Printf("userID: %s, photoID: %s, likeID: %s", userID, photoID, likeID)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
@@ -278,7 +280,9 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	if like.UserID != ctx.User.ID {
+	log.Printf("likeID: %d, userID: %d, photoID: %d", like.ID, like.UserID, like.PhotoID)
+
+	if like.UserID != user.ID {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -299,7 +303,8 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 
 	// Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
 	userID := ps.ByName("userId")
-	photoID := ps.ByName("photoId")
+	photoID := ps.ByName("photosId")
+	log.Printf("userId: %s, photoId: %s", userID, photoID)
 
 	// Verificare che l'ID dell'utente e l'ID della foto siano validi
 	if userID == "" || photoID == "" {
@@ -322,6 +327,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 
 	// Ottenere il testo del commento dalla richiesta
 	comment := r.FormValue("comment")
+	log.Printf("comment: %s", comment)
 
 	// Aggiungere il commento alla foto nel database
 	err = ctx.Database.SetComment(userID, photoID, comment)
@@ -339,8 +345,21 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 
 	// Ottenere l'ID dell'utente, l'ID della foto e l'ID del commento dalla richiesta
 	userID := ps.ByName("userId")
-	photoID := ps.ByName("photoId")
-	commentID := ps.ByName("commentId")
+	photoID := ps.ByName("photosId")
+	commentID := ps.ByName("commentsId")
+
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Autentica l'utente utilizzando il token
+	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	// Verificare che l'ID dell'utente, l'ID della foto e l'ID del commento siano validi
 	if userID == "" || photoID == "" || commentID == "" {
@@ -355,7 +374,7 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 		return
 	}
 
-	if comment.UserId != ctx.User.ID {
+	if comment.UserId != user.ID {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -376,7 +395,7 @@ func (rt *_router) getPhotoComments(w http.ResponseWriter, r *http.Request, ps h
 
 	// Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
 	userID := ps.ByName("userId")
-	photoID := ps.ByName("photoId")
+	photoID := ps.ByName("photosId")
 
 	// Verificare che l'ID dell'utente e l'ID della foto siano validi
 	if userID == "" || photoID == "" {

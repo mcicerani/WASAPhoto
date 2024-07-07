@@ -43,7 +43,17 @@
         <ul class="listaFoto">
           <!-- Utilizza un indice per controllare quando creare una nuova riga -->
           <li v-for="(photo, index) in userProfile.Photos" :key="photo.id" :class="{'new-row': index % 3 === 0}">
-            <img :src="'data:image/jpeg;base64,' + photo.image_data" alt="User Photo">
+            <div class="card">
+              <img :src="'data:image/jpeg;base64,' + photo.image_data" alt="User Photo">
+              <div>
+                <p>Likes:</p>
+                <p></p>
+              </div>
+              <div>
+                <p>Commenti:</p>
+                <p></p>
+              </div>
+            </div>
           </li>
         </ul>
       </div>

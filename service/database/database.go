@@ -124,7 +124,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		user_id INTEGER NOT NULL,
 		photo_id INTEGER NOT NULL,
 		text TEXT NOT NULL,
-		timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+		timestamp DATETIME NOT NULL,
 		FOREIGN KEY (user_id) REFERENCES users(id),
 		FOREIGN KEY (photo_id) REFERENCES photos(id)
 	)`)
