@@ -42,7 +42,6 @@ export default {
                                 <svg class="feather">
                                     <use href="/feather-sprite-v4.29.0.svg#heart"/>
                                 </svg>
-                                {{ photo.likes }}
                             </p>
                         </div>
                         <div class="text-center comments">
@@ -50,7 +49,6 @@ export default {
                                 <svg class="feather">
                                     <use href="/feather-sprite-v4.29.0.svg#message-square"/>
                                 </svg>
-                                {{ photo.comments }}
                             </p>
                         </div>
                     </div>

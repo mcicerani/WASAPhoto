@@ -79,10 +79,10 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 
 	// Costruisci l'oggetto Photo da restituire come risposta JSON
 	photo := database.Photo{
-		ID:         int(photoID),
-		UserID:     user.ID, // Utilizzo user.ID come ID dell'utente autenticato
-		ImageData:  imageData,
-		Timestamp:  timestamp,
+		ID:        int(photoID),
+		UserID:    user.ID, // Utilizzo user.ID come ID dell'utente autenticato
+		ImageData: imageData,
+		Timestamp: timestamp,
 	}
 
 	// Creare la risposta JSON contenente i dettagli della foto
@@ -101,111 +101,110 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 // deletePhotoHandler elimina una foto dal sistema di archiviazione locale e dal database
 
 func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
-    // Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
-    userID := ps.ByName("userId")
-    photoID := ps.ByName("photosId")
+	// Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
+	userID := ps.ByName("userId")
+	photoID := ps.ByName("photosId")
 
-    // Log per mostrare i parametri ricevuti
-    log.Printf("Deleting photo with userId: %s, photosId: %s\n", userID, photoID)
+	// Log per mostrare i parametri ricevuti
+	log.Printf("Deleting photo with userId: %s, photosId: %s\n", userID, photoID)
 
-    // Verificare che l'ID dell'utente e l'ID della foto siano validi
-    if userID == "" || photoID == "" {
-        log.Println("Bad Request: Empty userId or photosId")
-        http.Error(w, "Bad Request", http.StatusBadRequest)
-        return
-    }
+	// Verificare che l'ID dell'utente e l'ID della foto siano validi
+	if userID == "" || photoID == "" {
+		log.Println("Bad Request: Empty userId or photosId")
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
 
-    token, err := reqcontext.ExtractBearerToken(r)
-    if err != nil {
-        log.Println("Unauthorized: Failed to extract token")
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-        return
-    }
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		log.Println("Unauthorized: Failed to extract token")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-    // Autentica l'utente utilizzando il token
-    user, err := reqcontext.AuthenticateUser(token, ctx.Database)
-    if err != nil {
-        log.Println("Unauthorized: Authentication failed")
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-        return
-    }
+	// Autentica l'utente utilizzando il token
+	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
+		log.Println("Unauthorized: Authentication failed")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-    // Verificare se l'utente possiede la foto
-    photo, err := ctx.Database.GetPhotoByID(photoID)
-    if err != nil {
-        log.Printf("Internal Server Error: Failed to retrieve photo with photoId: %s\n", photoID)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Verificare se l'utente possiede la foto
+	photo, err := ctx.Database.GetPhotoByID(photoID)
+	if err != nil {
+		log.Printf("Internal Server Error: Failed to retrieve photo with photoId: %s\n", photoID)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-    if photo.UserID != user.ID {
-        log.Println("Unauthorized: User does not own the photo")
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-        return
-    }
+	if photo.UserID != user.ID {
+		log.Println("Unauthorized: User does not own the photo")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-    // Eliminare la foto dal database
-    err = ctx.Database.DeletePhoto(photoID)
-    if err != nil {
-        log.Printf("Internal Server Error: Failed to delete photo with photoId: %s\n", photoID)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Eliminare la foto dal database
+	err = ctx.Database.DeletePhoto(photoID)
+	if err != nil {
+		log.Printf("Internal Server Error: Failed to delete photo with photoId: %s\n", photoID)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-    // Rispondere con lo stato di successo
-    w.WriteHeader(http.StatusOK)
-    log.Printf("Photo deleted successfully with photoId: %s\n", photoID)
+	// Rispondere con lo stato di successo
+	w.WriteHeader(http.StatusOK)
+	log.Printf("Photo deleted successfully with photoId: %s\n", photoID)
 }
 
 // getPhotoHandler ottiene i dettagli di una foto dal database
 func (rt *_router) getPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
-    // Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
-    userID := ps.ByName("userId")
-    photoID := ps.ByName("photosId")
+	// Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
+	userID := ps.ByName("userId")
+	photoID := ps.ByName("photosId")
 
-    // Verificare che l'ID dell'utente e l'ID della foto siano validi
-    if userID == "" || photoID == "" {
-        http.Error(w, "Bad Request", http.StatusBadRequest)
-        log.Println("Bad Request: Empty userID or photosID")
-        return
-    }
+	// Verificare che l'ID dell'utente e l'ID della foto siano validi
+	if userID == "" || photoID == "" {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		log.Println("Bad Request: Empty userID or photosID")
+		return
+	}
 
-    token, err := reqcontext.ExtractBearerToken(r)
-    if err != nil {
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-        log.Printf("Unauthorized: %v\n", err)
-        return
-    }
+	token, err := reqcontext.ExtractBearerToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		log.Printf("Unauthorized: %v\n", err)
+		return
+	}
 
-    // Autentica l'utente utilizzando il token
-    _, err = reqcontext.AuthenticateUser(token, ctx.Database)
-    if err != nil {
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-        log.Printf("Unauthorized: %v\n", err)
-        return
-    }
+	// Autentica l'utente utilizzando il token
+	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		log.Printf("Unauthorized: %v\n", err)
+		return
+	}
 
-    // Ottenere i dettagli della foto dal database
-    photo, err := ctx.Database.GetPhotoByID(photoID)
-    if err != nil {
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        log.Printf("Internal Server Error: %v\n", err)
-        return
-    }
+	// Ottenere i dettagli della foto dal database
+	photo, err := ctx.Database.GetPhotoByID(photoID)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Internal Server Error: %v\n", err)
+		return
+	}
 
-    // Log per indicare il successo nel recupero dei dettagli della foto
-    log.Printf("Photo details fetched successfully: %v\n", photo)
+	// Log per indicare il successo nel recupero dei dettagli della foto
+	log.Printf("Photo details fetched successfully: %v\n", photo)
 
-    // Creare la risposta JSON contenente i dettagli della foto
-    w.Header().Set("Content-Type", "application/json")
-    err = json.NewEncoder(w).Encode(photo)
-    if err != nil {
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        log.Printf("Error encoding JSON response: %v\n", err)
-        return
-    }
+	// Creare la risposta JSON contenente i dettagli della foto
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(photo)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Error encoding JSON response: %v\n", err)
+		return
+	}
 }
-
 
 // likePhotoHandler aggiunge un like a una foto nel database
 func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
@@ -252,20 +251,19 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	photoID := ps.ByName("photosId")
 	likeID := ps.ByName("likesId")
 
-	
 	token, err := reqcontext.ExtractBearerToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	
+
 	// Autentica l'utente utilizzando il token
 	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-	
+
 	// Verificare che l'ID dell'utente, l'ID della foto e l'ID del like siano validi
 	if userID == "" || photoID == "" || likeID == "" {
 		log.Printf("userID: %s, photoID: %s, likeID: %s", userID, photoID, likeID)

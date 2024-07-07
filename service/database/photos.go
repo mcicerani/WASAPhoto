@@ -14,7 +14,7 @@ import (
 func (a *appdbimpl) SetPhoto(userID string, image_data []byte, timestamp string) (int64, error) {
 
 	userId, err := strconv.Atoi(userID)
-	log.Printf("%d",userId)
+	log.Printf("%d", userId)
 	if err != nil {
 		return 0, fmt.Errorf("converting user ID to integer: %w", err)
 	}
@@ -37,30 +37,30 @@ func (a *appdbimpl) SetPhoto(userID string, image_data []byte, timestamp string)
 
 // GetPhotoByID restituisce i dettagli della foto in photos con photos_id=id
 func (a *appdbimpl) GetPhotoByID(photoID string) (Photo, error) {
-    var photo Photo
+	var photo Photo
 
-    // Converti photoID in un intero
-    PhotoID, err := strconv.Atoi(photoID)
-    if err != nil {
-        return photo, fmt.Errorf("converting photo ID to integer: %w", err)
-    }
+	// Converti photoID in un intero
+	PhotoID, err := strconv.Atoi(photoID)
+	if err != nil {
+		return photo, fmt.Errorf("converting photo ID to integer: %w", err)
+	}
 
-    // Log per mostrare l'inizio del recupero della foto
-    log.Printf("Fetching photo with ID: %d\n", PhotoID)
+	// Log per mostrare l'inizio del recupero della foto
+	log.Printf("Fetching photo with ID: %d\n", PhotoID)
 
-    // Esegui la query per ottenere i dettagli della foto
-    err = a.c.QueryRow(`SELECT * FROM photos WHERE id = ?`, PhotoID).
-        Scan(&photo.ID, &photo.UserID, &photo.ImageData, &photo.Timestamp)
-    if err != nil {
-        // Log per gli errori durante il recupero della foto
-        log.Printf("Error fetching photo with ID %d: %v\n", PhotoID, err)
-        return photo, fmt.Errorf("selecting photo: %w", err)
-    }
+	// Esegui la query per ottenere i dettagli della foto
+	err = a.c.QueryRow(`SELECT * FROM photos WHERE id = ?`, PhotoID).
+		Scan(&photo.ID, &photo.UserID, &photo.ImageData, &photo.Timestamp)
+	if err != nil {
+		// Log per gli errori durante il recupero della foto
+		log.Printf("Error fetching photo with ID %d: %v\n", PhotoID, err)
+		return photo, fmt.Errorf("selecting photo: %w", err)
+	}
 
-    // Log per indicare il successo nel recupero della foto
-    log.Printf("Photo with ID %d fetched successfully\n", PhotoID)
+	// Log per indicare il successo nel recupero della foto
+	log.Printf("Photo with ID %d fetched successfully\n", PhotoID)
 
-    return photo, nil
+	return photo, nil
 }
 
 // DeletePhoto elimina la foto con photos_id=id dalla tabella photos

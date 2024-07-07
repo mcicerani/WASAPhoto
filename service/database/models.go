@@ -6,10 +6,10 @@ type User struct {
 }
 
 type Photo struct {
-	ID        	int    `json:"id"`
-	UserID    	int    `json:"user_id"`
-	ImageData	[]byte `json:"image_data"`
-	Timestamp 	string `json:"timestamp"`
+	ID        int    `json:"id"`
+	UserID    int    `json:"user_id"`
+	ImageData []byte `json:"image_data"`
+	Timestamp string `json:"timestamp"`
 }
 
 type Like struct {
