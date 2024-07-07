@@ -3,16 +3,13 @@
     <div class="row">
       <div class="col-md-4 offset-md-4">
         <h1 class="text-center">{{ userProfile.user.username }}</h1>
-        <!-- Link per cambiare l'username (solo per il proprio profilo) -->
         <p v-if="isOwnProfile" class="text-center">
           <RouterLink :to="`/users/${userProfile.user.id}/profile/edit`" class="nav-link">
             Cambia Username
           </RouterLink>
         </p>
         <p v-else class="text-center">
-          <!-- Pulsante per il toggle ban -->
           <button @click="toggleBan" class="btn btn-danger">{{ isBanned ? 'Unban' : 'Ban' }}</button>
-          <!-- Pulsante per il toggle follow -->
           <button @click="toggleFollow" class="btn btn-primary">{{ isFollowing ? 'Unfollow' : 'Follow' }}</button>
         </p>
       </div>
@@ -20,19 +17,19 @@
     <div class="row mt-4">
       <div class="col-md-4">
         <div>
-          <p class="text-center">Followers</p>
+          <h3 class="text-center">Followers</h3>
           <p class="text-center">{{ userProfile.numFollowers }}</p>
         </div>
       </div>
       <div class="col-md-4">
         <div>
-          <p class="text-center">Follows</p>
+          <h3 class="text-center">Seguiti</h3>
           <p class="text-center">{{ userProfile.numFollowing }}</p>
         </div>
       </div>
       <div class="col-md-4">
         <div>
-          <p class="text-center">Foto</p>
+          <h3 class="text-center">Post</h3>
           <p class="text-center">{{ userProfile.numPhotos }}</p>
         </div>
       </div>
@@ -41,17 +38,24 @@
     <div class="row mt-4">
       <div class="col-md-12">
         <ul class="listaFoto">
-          <!-- Utilizza un indice per controllare quando creare una nuova riga -->
-          <li v-for="(photo, index) in userProfile.Photos" :key="photo.id" :class="{'new-row': index % 3 === 0}">
+          <li v-for="(photo, index) in userProfile.Photos" :key="photo.id" :class="{'new-row': index % 1 === 0}">
             <div class="card">
-              <img :src="'data:image/jpeg;base64,' + photo.image_data" alt="User Photo">
-              <div>
-                <p>Likes:</p>
-                <p></p>
+              <img class="text-center" :src="'data:image/jpeg;base64,' + photo.image_data" alt="User Photo">
+              <div class="text-center likes">
+                <p>
+                  <svg class="feather">
+                    <use href="/feather-sprite-v4.29.0.svg#heart"/>
+                  </svg>
+                  {{ photo.likes }}
+                </p>
               </div>
-              <div>
-                <p>Commenti:</p>
-                <p></p>
+              <div class="text-center comments">
+                <p>
+                  <svg class="feather">
+                    <use href="/feather-sprite-v4.29.0.svg#message-square"/>
+                  </svg>
+                  {{ photo.comments }}
+                </p>
               </div>
             </div>
           </li>
@@ -60,17 +64,16 @@
     </div>
     <div class="row mt-4">
       <div class="col-md-12 text-center">
-        <FileUpload @photo-uploaded="addPhoto" />
+        <FileUpload @photo-uploaded="addPhotoToProfile" />
       </div>
     </div>
   </div>
 </template>
 
-
 <script>
 import api from "@/services/axios";
 import { RouterLink } from "vue-router";
-import FileUpload from "@/components/FileUpload.vue"
+import FileUpload from "@/components/FileUpload.vue";
 
 export default {
   components: {
@@ -116,8 +119,33 @@ export default {
           }
         });
         this.userProfile = response.data;
+
+        // Fetch likes and comments for each photo
+        await Promise.all(this.userProfile.Photos.map(photo => this.loadPhotoDetails(photo)));
       } catch (error) {
         console.error('Error loading user profile:', error);
+      }
+    },
+    async loadPhotoDetails(photo) {
+      try {
+        const userId = this.userProfile.user.id;
+        const likesResponse = await api.get(`/users/${userId}/photos/${photo.id}/likes`, {
+          headers: {
+            Authorization: localStorage.getItem('token')
+          }
+        });
+        const commentsResponse = await api.get(`/users/${userId}/photos/${photo.id}/comments`, {
+          headers: {
+            Authorization: localStorage.getItem('token')
+          }
+        });
+
+        photo.likes = likesResponse.data ? likesResponse.data.length : 0;
+        photo.comments = commentsResponse.data ? commentsResponse.data.length : 0;
+      } catch (error) {
+        console.error('Error loading photo details:', error);
+        photo.likes = 0;
+        photo.comments = 0;
       }
     },
     async loadFollowAndBanStatus() {
@@ -137,7 +165,7 @@ export default {
             Authorization: localStorage.getItem('token')
           }
         });
-        this.isBanned = banResponse.data.isBanned; // Assicurati che isBanned venga impostato correttamente
+        this.isBanned = banResponse.data.isBanned;
       } catch (error) {
         console.error('Error loading follow and ban status:', error);
       }
@@ -198,62 +226,89 @@ export default {
     }
   }
 };
-
 </script>
-
 
 <style>
   h1 {
     text-transform: capitalize;
   }
-  .btn{
+  .btn {
     margin: 1rem;
     background-color: white;
     transition: 0.5s all;
     width: 7rem;
   }
-  .btn-danger{
+  .btn-danger {
     border: solid 1px red;
-    color: red
+    color: red;
   }
-  .btn-danger:hover{
+  .btn-danger:hover {
     background-color: red;
     color: white;
   }
-  .btn-primary{
+  .btn-primary {
     border: solid 1px blue;
     color: blue;
   }
-  .btn-primary:hover{
+  .btn-primary:hover {
     background-color: blue;
     color: white;
-
   }
 
-  /* Stile per la lista delle foto */
   .listaFoto {
     display: flex;
-    flex-wrap: wrap; /* Per consentire il wrap delle immagini */
-    justify-content: center; /* Centra le righe */
+    flex-wrap: wrap;
+    justify-content: center;
     padding: 0;
     list-style-type: none;
   }
 
-  /* Stile per ogni singola immagine */
   .listaFoto li {
-    width: 30%; /* Ogni immagine occupa il 30% della larghezza della riga */
-    margin: 0.5rem; /* Spaziatura tra le immagini */
-    box-sizing: border-box; /* Include il padding e il bordo nel calcolo della larghezza */
+    width: 75%;
+    margin: 2rem auto;
+    box-sizing: border-box;
   }
 
   .listaFoto li.new-row {
-    clear: both; /* Pulisce ogni nuova riga */
+    clear: both;
   }
 
-  .listaFoto li img {
-    width: 100%;
-    display: block; /* Impedisce la creazione di spazi bianchi */
+  .card{
+    width:100%;
+    display: grid;
+    grid-template-columns: auto auto auto;
+    grid-template-rows: auto auto auto 3rem;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+  }
+
+  .card:hover{
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2)
+  }
+
+  .card img{
+    margin: 2rem auto;
+    width: 90%;
+    grid-column-start: 1;
+    grid-column-end: 4;
+    grid-row-start: 1;
+    grid-row-end: 4;
+  }
+
+  .comments{
+    grid-column-start: 1;
+    grid-column-end: 2;
+    grid-row-start: 4;
+    grid-row-end: 5 ;
+  }
+
+  .likes{
+    grid-column-start: 3;
+    grid-column-end: 4;
+    grid-row-start: 4;
+    grid-row-end: 5 ;
   }
 
 
 </style>
+
