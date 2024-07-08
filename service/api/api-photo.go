@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"git.sapienzaapps.it/fantasticcoffee/fantastic-coffee-decaffeinated/service/api/reqcontext"
@@ -209,16 +210,6 @@ func (rt *_router) getPhoto(w http.ResponseWriter, r *http.Request, ps httproute
 // likePhotoHandler aggiunge un like a una foto nel database
 func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	// Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
-	userID := ps.ByName("userId")
-	photoID := ps.ByName("photosId")
-
-	// Verificare che l'ID dell'utente e l'ID della foto siano validi
-	if userID == "" || photoID == "" {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
-
 	token, err := reqcontext.ExtractBearerToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -226,9 +217,19 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// ID della foto dalla richiesta
+	photoID := ps.ByName("photosId")
+	userID := strconv.Itoa(user.ID)
+
+	// Verificare che l'ID dell'utente e l'ID della foto siano validi
+	if userID == "" || photoID == "" {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
@@ -246,11 +247,6 @@ func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprout
 // unlikePhotoHandler rimuove un like da una foto nel database
 func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	// Ottenere l'ID dell'utente, l'ID della foto e l'ID del like dalla richiesta
-	userID := ps.ByName("userId")
-	photoID := ps.ByName("photosId")
-	likeID := ps.ByName("likesId")
-
 	token, err := reqcontext.ExtractBearerToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -263,6 +259,10 @@ func (rt *_router) unlikePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+
+	photoID := ps.ByName("photosId")
+	likeID := ps.ByName("likesId")
+	userID := strconv.Itoa(user.ID)
 
 	// Verificare che l'ID dell'utente, l'ID della foto e l'ID del like siano validi
 	if userID == "" || photoID == "" || likeID == "" {
@@ -322,7 +322,7 @@ func (rt *_router) getPhotoLikes(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Ottenere i likes della foto dal database
-	comments, err := ctx.Database.GetLikesByPhotoID(photoID)
+	likes, err := ctx.Database.GetLikesByPhotoID(photoID)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -330,7 +330,7 @@ func (rt *_router) getPhotoLikes(w http.ResponseWriter, r *http.Request, ps http
 
 	// Creare la risposta JSON contenente i commenti della foto
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(comments)
+	err = json.NewEncoder(w).Encode(likes)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -340,17 +340,6 @@ func (rt *_router) getPhotoLikes(w http.ResponseWriter, r *http.Request, ps http
 // commentPhotoHandler aggiunge un commento a una foto nel database
 func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	// Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
-	userID := ps.ByName("userId")
-	photoID := ps.ByName("photosId")
-	log.Printf("userId: %s, photoId: %s", userID, photoID)
-
-	// Verificare che l'ID dell'utente e l'ID della foto siano validi
-	if userID == "" || photoID == "" {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
-
 	token, err := reqcontext.ExtractBearerToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -358,9 +347,20 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 
 	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// ID della foto dalla richiesta
+	photoID := ps.ByName("photosId")
+	userID := strconv.Itoa(user.ID)
+	log.Printf("userID: %s, photoId: %s", userID, photoID)
+
+	// Verificare che l'ID dell'utente e l'ID della foto siano validi
+	if userID == "" || photoID == "" {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
@@ -382,11 +382,6 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 // uncommentPhotoHandler rimuove un commento da una foto nel database
 func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	// Ottenere l'ID dell'utente, l'ID della foto e l'ID del commento dalla richiesta
-	userID := ps.ByName("userId")
-	photoID := ps.ByName("photosId")
-	commentID := ps.ByName("commentsId")
-
 	token, err := reqcontext.ExtractBearerToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -399,6 +394,11 @@ func (rt *_router) uncommentPhoto(w http.ResponseWriter, r *http.Request, ps htt
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
+
+	// Ottenere l'ID dell'utente, l'ID della foto e l'ID del commento dalla richiesta
+	userID := strconv.Itoa(user.ID)
+	photoID := ps.ByName("photosId")
+	commentID := ps.ByName("commentsId")
 
 	// Verificare che l'ID dell'utente, l'ID della foto e l'ID del commento siano validi
 	if userID == "" || photoID == "" || commentID == "" {
