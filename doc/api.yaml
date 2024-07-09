@@ -326,11 +326,11 @@ paths:
         "404": 
           $ref: "#/components/responses/UserNotFound"       
   
-  /users/{userId}/photos/{photosId}/likes/{likeId}:
+  /users/{userId}/photos/{photosId}/likes/{likesId}:
     parameters:
       - $ref: '#/components/parameters/userId'
       - $ref: '#/components/parameters/photosId'
-      - $ref: '#/components/parameters/likeId'
+      - $ref: '#/components/parameters/likesId'
     delete:
       security:
       - bearerAuth : []
@@ -367,7 +367,7 @@ paths:
               examples:
                 example1:
                   value:
-                    commentId: "123"
+                    commentsId: "123"
                     text: "ciao come stai?"
         "401":
           $ref: '#/components/responses/UnauthorizedError'
@@ -398,10 +398,10 @@ paths:
                 example:
                   value:
                     comments:
-                      - commentId: "123"
+                      - commentsId: "123"
                         userId: "1"
                         text: "Nice photo"
-                      - commentId: "12"
+                      - commentsId: "12"
                         userId: "32"
                         text: "You are great"
         "401":
@@ -409,11 +409,11 @@ paths:
         "404": 
           $ref: "#/components/responses/UserNotFound"
 
-  /users/{userId}/photos/{photosId}/comments/{commentId}:
+  /users/{userId}/photos/{photosId}/comments/{commentsId}:
     parameters:
       - $ref: '#/components/parameters/userId'
       - $ref: '#/components/parameters/photosId'
-      - $ref: '#/components/parameters/commentId'
+      - $ref: '#/components/parameters/commentsId'
     delete:
       security:
       - bearerAuth : []
@@ -492,7 +492,7 @@ paths:
     post:
       security:
       - bearerAuth : []
-      tags: ["user"]
+      tags: ["bans"]
       description: allows to ban other accounts
       summary: ban another account
       operationId: banUser
@@ -568,7 +568,7 @@ components:
                 description: Photo unique identifier
                 type: string
                 example: "1234"
-              likeId:
+              likesId:
                 description: like unique identifier
                 type: string
                 example: "134"
@@ -738,8 +738,8 @@ components:
         pattern: '^.*?$'
         minLength: 1
         maxLength: 20
-    commentId:
-      name: commentId
+    commentsId:
+      name: commentsId
       in: path
       required: true
       description: ID of the comment to delete
@@ -749,8 +749,8 @@ components:
         pattern: '^.*?$'
         minLength: 1
         maxLength: 20
-    likeId:
-      name: likeId
+    likesId:
+      name: likesId
       in: path
       required: true
       description: ID of the like to delete
@@ -864,7 +864,7 @@ components:
         photosId:
           type: string
           description: The unique identifier of the photo
-        commentId:
+        commentsId:
           type: string
           description: The unique identifier of the comment
         text:
