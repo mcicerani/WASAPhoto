@@ -74,7 +74,7 @@ func (rt *_router) uploadPhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	photoID, err := ctx.Database.SetPhoto(userID, imageData, timestamp)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		log.Println("Error saving photo URL to database:", err)
+		log.Println("Error saving photo and retrieving ID:", err)
 		return
 	}
 
@@ -353,7 +353,8 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
-	// ID della foto dalla richiesta
+	// ID della foto dalla richiesta , user che commenta e timestamp
+	timestamp := time.Now().Format("20060102150405") // Formato timestamp: YYYYMMDDHHmmSS
 	photoID := ps.ByName("photosId")
 	userID := strconv.Itoa(user.ID)
 	log.Printf("userID: %s, photoId: %s", userID, photoID)
@@ -369,14 +370,32 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	log.Printf("comment: %s", comment)
 
 	// Aggiungere il commento alla foto nel database
-	err = ctx.Database.SetComment(userID, photoID, comment)
+	commentID, err := ctx.Database.SetComment(userID, photoID, comment, timestamp)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Println("Error saving comment and retrieving ID:", err)
 		return
 	}
 
-	// Rispondere con lo stato di successo
-	w.WriteHeader(http.StatusOK)
+	photoIDInt, _ := strconv.Atoi(photoID)
+
+	commentResponse := database.Comment{
+		ID:			int(commentID),
+		UserId:		user.ID,
+		PhotoId:	photoIDInt,
+		Text:		comment,
+		Timestamp:	timestamp,
+	}
+
+	// Creare la risposta JSON contenente i dettagli della foto
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(commentResponse)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Println("Error encoding JSON response:", err)
+		return
+	}
+	
 }
 
 // uncommentPhotoHandler rimuove un commento da una foto nel database

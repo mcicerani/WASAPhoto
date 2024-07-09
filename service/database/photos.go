@@ -90,26 +90,31 @@ func (a *appdbimpl) DeletePhoto(photoID string) error {
 }
 
 // SetComment inserisce un nuovo commento nel database nella tabella comment
-func (a *appdbimpl) SetComment(userID string, photoID string, comment string) error {
+func (a *appdbimpl) SetComment(userID string, photoID string, comment string, timestamp string) (int64, error) {
 
 	UserID, err := strconv.Atoi(userID)
 	if err != nil {
-		return fmt.Errorf("converting user ID to integer: %w", err)
+		return 0, fmt.Errorf("converting user ID to integer: %w", err)
 	}
 
 	PhotoID, err := strconv.Atoi(photoID)
 	if err != nil {
-		return fmt.Errorf("converting photo ID to integer: %w", err)
+		return 0, fmt.Errorf("converting photo ID to integer: %w", err)
 	}
 
-	timestamp := time.Now().Format("20060102150405") // Formato timestamp: YYYYMMDDHHmmSS
-
-	_, err = a.c.Exec(`INSERT INTO comments (user_id, photo_id, text, timestamp) VALUES (?, ?, ?, ?)`, UserID, PhotoID, comment, timestamp)
+	result, err := a.c.Exec(`INSERT INTO comments (user_id, photo_id, text, timestamp) VALUES (?, ?, ?, ?)`, UserID, PhotoID, comment, timestamp)
 	if err != nil {
-		return fmt.Errorf("inserting comment: %w", err)
+		return 0, fmt.Errorf("inserting comment: %w", err)
 	}
 
-	return nil
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("getting last insert ID: %w", err)
+	}
+
+	log.Printf("Inserted comment for photo:%d, user: %d at timestamp:%s", PhotoID, UserID, timestamp)
+
+	return id, nil
 }
 
 // GetCommentByID restituisce i dettagli del commento in comment con comment_id=id

@@ -60,7 +60,7 @@ type AppDatabase interface {
 	SetPhoto(userId string, image_data []byte, timestamp string) (int64, error)
 	GetPhotoByID(photoID string) (Photo, error)
 	DeletePhoto(photoID string) error
-	SetComment(userId string, photoID string, comment string) error
+	SetComment(userId string, photoID string, comment string, timestamp string) (int64, error)
 	GetCommentByID(commentID string) (Comment, error)
 	DeleteComment(commentID string) error
 	GetCommentsByPhotoID(photoID string) ([]Comment, error)
@@ -111,7 +111,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,
 		image_data BLOB,
-		timestamp DATETIME NOT NULL,
+		timestamp TEXT NOT NULL,
 		FOREIGN KEY (user_id) REFERENCES users(id)
 	)`)
 	if err != nil {
@@ -124,7 +124,7 @@ func New(db *sql.DB) (AppDatabase, error) {
 		user_id INTEGER NOT NULL,
 		photo_id INTEGER NOT NULL,
 		text TEXT NOT NULL,
-		timestamp DATETIME NOT NULL,
+		timestamp TEXT NOT NULL,
 		FOREIGN KEY (user_id) REFERENCES users(id),
 		FOREIGN KEY (photo_id) REFERENCES photos(id)
 	)`)
