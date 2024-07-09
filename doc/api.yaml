@@ -40,29 +40,6 @@ tags:
     description: Operation related to search other users
 paths:
 
-############## Info Applicazione ##############
-
-  /:
-    get:
-      tags: ["appStart"]
-      summary: Ritorna info sull'app
-      description: Ritorna dettagli e informazioni applicazione
-      operationId: homeHandle
-      responses:
-        "200":
-          description: Successo. Informazioni sull'applicazione restituite
-          content:
-            application/json:
-              schema:
-                type: object
-                description: Schema di risposta contenente informazioni sull'applicazione
-                properties:
-                  message:
-                    type: string
-                    description: Messaggio di benvenuto dell'applicazione
-                    example: Benvenuto nella nostra applicazione!
-
-
 ############## Simplified login ##############
 
   /session:
@@ -295,32 +272,6 @@ paths:
             Photo and his likes and comments deleted successfully
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-    get:
-      security:
-      - bearerAuth : []
-      tags: ["photos"]
-      description: allows to get a photo
-      summary: Get a photo
-      operationId: getPhoto
-      responses:
-        "200":
-          description: successfully return photo
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Photo'
-              examples:
-                example1:
-                  value:
-                    photosId: "abc123"
-                    url: "https://example.com/Users/{userId}/photos/{photosId}"
-                    timestamp: "2024-05-16T17:24:49.408Z"
-                    likes: ["1","32"]
-                    comments: [""]
-        "401":
-          $ref: '#/components/responses/UnauthorizedError'
-        "404":
-          $ref: '#/components/responses/UserNotFound'
 
 #-------Photo likes-------#
 
@@ -479,44 +430,6 @@ paths:
 
 #-------follows e followers-------#
 
-  /users/{userId}/follows:
-    parameters:
-      - $ref: "#/components/parameters/userId"
-    get:
-      security:
-      - bearerAuth : []
-      tags: ["user"]
-      description: get the list of follows
-      summary: retrieve list of follows for the user
-      operationId: getUserfollows
-      responses:
-        "200": 
-          description: successfully retrieve follows list
-          content:
-            application/json: 
-              schema:
-                description: list of follows
-                type: object
-                properties:
-                  follows:
-                    description: list of follows
-                    type: array
-                    minItems: 0
-                    maxItems: 1000
-                    items:
-                      type: string
-              examples:
-                example:
-                  value:
-                    follows:
-                      - "123"
-                      - "1234"
-                      - "40"
-        "401": 
-          $ref: "#/components/responses/UnauthorizedError"
-        "404": 
-          $ref: "#/components/responses/UserNotFound"
-
   /users/{userId}/follows/{followedId}:
     parameters:
       - $ref: '#/components/parameters/followedId'
@@ -569,85 +482,8 @@ paths:
           description: L'utente specificato non esiste o il ban non è presente.
         "500":
           description: Errore interno del server. Controlla i registri per ulteriori dettagli
-
-
-  /users/{userId}/followers:
-    parameters:
-      - $ref: "#/components/parameters/userId"
-    get:
-      security:
-      - bearerAuth : []
-      tags: ["user"]
-      description: get the list of followers
-      summary: retrieve list of followers for the user
-      operationId: getUserfollowers
-      responses:
-        "200": 
-          description: successfully retrieve followers list
-          content:
-            application/json: 
-              schema:
-                description: list of followers
-                type: object
-                properties:
-                  followers:
-                    description: list of followers
-                    type: array
-                    items:
-                      type: string
-                    minItems: 0
-                    maxItems: 1000
-              examples:
-                example:
-                  value:
-                    followers:
-                      - "123"
-                      - "1234"
-                      - "40"
-        "401": 
-          $ref: "#/components/responses/UnauthorizedError"
-        "404": 
-          $ref: "#/components/responses/UserNotFound"
           
 #-------ban-------#
-
-  /users/{userId}/bans:
-    parameters:
-      - $ref: "#/components/parameters/userId"
-    get:
-      security:
-      - bearerAuth : []
-      tags: ["bans"]
-      description: get the list of bans
-      summary: retrieve list of bans for the user
-      operationId: getUserBans
-      responses:
-        "200": 
-          description: successfully retrieve bans list
-          content:
-            application/json: 
-              schema:
-                description: list of bans
-                type: object
-                properties:
-                  follows:
-                    description: list of bans
-                    type: array
-                    minItems: 0
-                    maxItems: 1000
-                    items:
-                      type: string
-              examples:
-                example:
-                  value:
-                    follows:
-                      - "123"
-                      - "1234"
-                      - "40"
-        "401": 
-          $ref: "#/components/responses/UnauthorizedError"
-        "404": 
-          $ref: "#/components/responses/UserNotFound"
 
   /users/{userId}/bans/{bannedId}:
     parameters:
