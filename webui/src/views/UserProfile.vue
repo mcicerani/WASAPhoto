@@ -40,23 +40,26 @@
         <ul class="listaFoto">
           <li v-for="(photo, index) in userProfile.Photos" :key="photo.id" :class="{'new-row': index % 1 === 0}">
             <div class="card">
-              <img class="text-center" :src="'data:image/jpeg;base64,' + photo.image_data" alt="User Photo">
-              <div class="text-center likes">
-                <p>
-                  <svg class="feather">
-                    <use href="/feather-sprite-v4.29.0.svg#heart"/>
-                  </svg>
-                  {{ photo.likes }}
-                </p>
+              <div class="card-body">
+                <img class="text-center" :src="'data:image/jpeg;base64,' + photo.image_data" alt="User Photo">
+                <div class="text-center likes">
+                  <p>
+                    <svg class="feather">
+                      <use href="/feather-sprite-v4.29.0.svg#heart"/>
+                    </svg>
+                    {{ photo.likes }}
+                  </p>
+                </div>
+                <div class="text-center comments">
+                  <p>
+                    <svg class="feather">
+                      <use href="/feather-sprite-v4.29.0.svg#message-square"/>
+                    </svg>
+                    {{ photo.comments }}
+                  </p>
+                </div>
               </div>
-              <div class="text-center comments">
-                <p>
-                  <svg class="feather">
-                    <use href="/feather-sprite-v4.29.0.svg#message-square"/>
-                  </svg>
-                  {{ photo.comments }}
-                </p>
-              </div>
+              <Comments :userId="userProfile.user.id" :photoId="photo.id" />
             </div>
           </li>
         </ul>
@@ -74,11 +77,13 @@
 import api from "@/services/axios";
 import { RouterLink } from "vue-router";
 import FileUpload from "@/components/FileUpload.vue";
+import Comments from "@/components/Comments.vue";
 
 export default {
   components: {
     RouterLink,
-    FileUpload
+    FileUpload,
+    Comments
   },
   data() {
     return {
@@ -273,42 +278,51 @@ export default {
     clear: both;
   }
 
-  .card{
-    width:100%;
-    display: grid;
-    grid-template-columns: auto auto auto;
-    grid-template-rows: auto auto auto 3rem;
-    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+  .card {
+    width: 100%;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
     transition: 0.3s;
   }
 
-  .card:hover{
-    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2)
+  .card:hover {
+    box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
   }
 
-  .card img{
-    margin: 2rem auto;
-    width: 90%;
-    grid-column-start: 1;
-    grid-column-end: 4;
-    grid-row-start: 1;
-    grid-row-end: 4;
+  .card-body {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    grid-template-rows: auto auto auto 3rem;
+    padding: 1rem;
   }
 
-  .comments{
+  .card img {
+    width: 100%;
+    grid-column: span 3;
+    margin-bottom: 1rem;
+  }
+
+  .comments {
     grid-column-start: 1;
     grid-column-end: 2;
     grid-row-start: 4;
-    grid-row-end: 5 ;
+    grid-row-end: 5;
   }
 
-  .likes{
+  .comments p svg{
+    transform: scale(150%);
+    margin: 1rem;
+  }
+  
+  .likes {
     grid-column-start: 3;
     grid-column-end: 4;
     grid-row-start: 4;
-    grid-row-end: 5 ;
+    grid-row-end: 5;
+  }
+  
+  .likes p svg{
+    transform: scale(150%);
+    margin: 1rem;
   }
 
-
 </style>
-
