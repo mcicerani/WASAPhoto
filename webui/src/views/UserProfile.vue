@@ -40,6 +40,9 @@
         <ul class="listaFoto">
           <li v-for="(photo, index) in userProfile.Photos" :key="photo.id" :class="{'new-row': index % 1 === 0}">
             <div class="card">
+              <div class="text-center" v-if="isOwnProfile">
+                <button @click="deletePhoto(photo.id)" class="btn btn-danger">Elimina</button>
+              </div>
               <div class="card-body">
                 <img class="text-center" :src="'data:image/jpeg;base64,' + photo.image_data" alt="User Photo">
                 <div class="text-center likes">
@@ -132,14 +135,20 @@ export default {
             Authorization: localStorage.getItem('token')
           }
         });
-        
-        // Ordina le foto per timestamp in ordine decrescente
-        response.data.Photos.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
-        this.userProfile = response.data;
+        if (response.data.Photos && response.data.Photos.length > 0) {
+          // Ordina le foto per timestamp in ordine decrescente
+          response.data.Photos.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+          
+          this.userProfile = response.data;
 
-        // Fetch likes and comments for each photo
-        await Promise.all(this.userProfile.Photos.map(photo => this.loadPhotoDetails(photo)));
+          // Fetch likes and comments for each photo
+          await Promise.all(this.userProfile.Photos.map(photo => this.loadPhotoDetails(photo)));
+        } else {
+          // Se non ci sono foto disponibili, gestire di conseguenza
+          this.userProfile = response.data;
+          this.userProfile.Photos = []; // Assicurati che Photos sia un array vuoto
+        }
       } catch (error) {
         console.error('Error loading user profile:', error);
       }
@@ -165,6 +174,25 @@ export default {
         photo.likes = 0;
         photo.comments = 0;
       }
+    },
+    async deletePhoto(photoId) {
+      const userId = this.userProfile.user.id;
+
+        try {
+          const response = await api.delete(`/users/${userId}/photos/${photoId}`, {
+            headers: {
+              Authorization: localStorage.getItem('token')
+            }
+          });
+
+          // Rimuovi la foto dall'array userProfile.Photos
+          this.userProfile.Photos = this.userProfile.Photos.filter(photo => photo.id !== photoId);
+          this.userProfile.numPhotos--; // Aggiorna il numero di foto
+
+          console.log('Photo deleted successfully:', response.data);
+        } catch (error) {
+          console.error('Error deleting photo:', error);
+        }
     },
     async loadFollowAndBanStatus() {
       const userId = this.$route.params.userId;
