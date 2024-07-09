@@ -24,7 +24,7 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, _ httprouter.
 		return
 	}
 
-	username := requestBody.Username
+	username := strings.ToLower(requestBody.Username)
 	log.Printf("Login attempt with username: %s", username)
 
 	// Verifica se l'utente esiste nel database

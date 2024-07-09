@@ -64,60 +64,53 @@ func (rt *_router) searchUser(w http.ResponseWriter, r *http.Request, _ httprout
 
 // SetMyUserNameHandler modifica il nome utente
 func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+    type UsernameUpdateRequest struct {
+        Username string `json:"username"`
+    }
 
-	type UsernameUpdateRequest struct {
-		Username string `json:"username"`
-	}
+    // Estrae il token dall'header Authorization
+    token, err := reqcontext.ExtractBearerToken(r)
+    if err != nil {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
 
-	// Estrae il token dall'header Authorization
-	token, err := reqcontext.ExtractBearerToken(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+    // Autentica l'utente utilizzando il token JWT
+    user, err := reqcontext.AuthenticateUser(token, ctx.Database)
+    if err != nil {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
 
-	// Autentica l'utente utilizzando il token JWT
-	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+    // Verifica che l'utente autenticato sia autorizzato a modificare l'username
+    userID := ps.ByName("userId")
+    if strconv.Itoa(user.ID) != userID {
+        http.Error(w, "Forbidden", http.StatusForbidden)
+        return
+    }
 
-	// Verifica che l'utente autenticato sia autorizzato a modificare l'username
-	userID := ps.ByName("userId")
-	if strconv.Itoa(user.ID) != userID {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return
-	}
+    // Decodifica il corpo JSON della richiesta
+    var reqBody UsernameUpdateRequest
+    if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+        log.Printf("Error decoding request body: %v", err)
+        http.Error(w, "Invalid request body", http.StatusBadRequest)
+        return
+    }
 
-	// Decodifica il corpo JSON della richiesta
-	var reqBody UsernameUpdateRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		log.Printf("Error decoding request body: %v", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
+    // Effettua l'aggiornamento dell'username nel database
+    err = ctx.Database.UpdateUsername(userID, reqBody.Username)
+    if err != nil {
+        if err.Error() == "username already exists" {
+            http.Error(w, "Username già esistente", http.StatusConflict)
+            return
+        }
+        log.Printf("Errore durante l'aggiornamento dell'username: %v", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	// Assicurati che il campo 'username' sia presente e non vuoto
-	if reqBody.Username == "" {
-		http.Error(w, "Bad Request: 'username' field is required", http.StatusBadRequest)
-		return
-	}
-
-	// Log delle informazioni sull'utente e sull'operazione
-	log.Printf("User ID autenticato: %d, Username: %s", user.ID, user.Username)
-	log.Printf("UserID da parametro: %s", userID)
-	log.Printf("Nuovo username da aggiornare: %s", reqBody.Username)
-
-	// Effettua l'aggiornamento dell'username nel database
-	if err := ctx.Database.UpdateUsername(userID, reqBody.Username); err != nil {
-		log.Printf("Errore durante l'aggiornamento dell'username: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	// Risponde con successo
-	w.WriteHeader(http.StatusOK)
+    // Risponde con successo
+    w.WriteHeader(http.StatusOK)
 }
 
 // GetUserProfileHandler ritorna il profilo utente
