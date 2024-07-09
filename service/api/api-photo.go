@@ -380,11 +380,11 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	photoIDInt, _ := strconv.Atoi(photoID)
 
 	commentResponse := database.Comment{
-		ID:			int(commentID),
-		UserId:		user.ID,
-		PhotoId:	photoIDInt,
-		Text:		comment,
-		Timestamp:	timestamp,
+		ID:        int(commentID),
+		UserId:    user.ID,
+		PhotoId:   photoIDInt,
+		Text:      comment,
+		Timestamp: timestamp,
 	}
 
 	// Creare la risposta JSON contenente i dettagli della foto
@@ -395,7 +395,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 		log.Println("Error encoding JSON response:", err)
 		return
 	}
-	
+
 }
 
 // uncommentPhotoHandler rimuove un commento da una foto nel database
