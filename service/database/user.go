@@ -77,29 +77,29 @@ func (a *appdbimpl) DeleteUser(username string) error {
 
 // UpdateUsername cambia username dell'user con username=newname controllando prima il corrispondente id in users
 func (a *appdbimpl) UpdateUsername(userID string, newname string) error {
-    id, err := strconv.Atoi(userID)
-    if err != nil {
-        return fmt.Errorf("converting user ID to integer: %w", err)
-    }
+	id, err := strconv.Atoi(userID)
+	if err != nil {
+		return fmt.Errorf("converting user ID to integer: %w", err)
+	}
 
 	username := strings.ToLower(newname)
 
-    // Controlla se l'username esiste già (case-insensitive)
-    var count int
-    err = a.c.QueryRow(`SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?)`, username).Scan(&count)
-    if err != nil {
-        return fmt.Errorf("checking username existence: %w", err)
-    }
-    if count > 0 {
-        return fmt.Errorf("username already exists")
-    }
+	// Controlla se l'username esiste già (case-insensitive)
+	var count int
+	err = a.c.QueryRow(`SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER(?)`, username).Scan(&count)
+	if err != nil {
+		return fmt.Errorf("checking username existence: %w", err)
+	}
+	if count > 0 {
+		return fmt.Errorf("username already exists")
+	}
 
-    _, err = a.c.Exec(`UPDATE users SET username = ? WHERE ID = ?`, newname, id)
-    if err != nil {
-        return fmt.Errorf("updating username: %w", err)
-    }
+	_, err = a.c.Exec(`UPDATE users SET username = ? WHERE ID = ?`, newname, id)
+	if err != nil {
+		return fmt.Errorf("updating username: %w", err)
+	}
 
-    return nil
+	return nil
 }
 
 // FollowUser crea nella tabella la relazione followed/follower
