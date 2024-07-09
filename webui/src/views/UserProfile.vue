@@ -50,6 +50,15 @@
                     {{ photo.likes }}
                   </p>
                 </div>
+                <div class="text-center time">
+                  <p>
+                      <svg class="feather">
+                          <use href="/feather-sprite-v4.29.0.svg#clock"/>
+                      </svg>
+                      {{ formatTimestamp(photo.timestamp) }}
+                    </p>
+              </div>
+
                 <div class="text-center comments">
                   <p>
                     <svg class="feather">
@@ -123,6 +132,10 @@ export default {
             Authorization: localStorage.getItem('token')
           }
         });
+        
+        // Ordina le foto per timestamp in ordine decrescente
+        response.data.Photos.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
         this.userProfile = response.data;
 
         // Fetch likes and comments for each photo
@@ -228,6 +241,21 @@ export default {
     addPhotoToProfile(photo) {
       this.userProfile.Photos.push(photo);
       this.userProfile.numPhotos++;
+    },
+    formatTimestamp(timestamp) {
+      if (!timestamp || timestamp.length !== 14) {
+        return ''; // Gestione di casi non validi, ad esempio timestamp mancante o formato non corretto
+      }
+      // Estrai le singole parti del timestamp
+      const year = timestamp.substring(0, 4);
+      const month = timestamp.substring(4, 6);
+      const day = timestamp.substring(6, 8);
+      const hours = timestamp.substring(8, 10);
+      const minutes = timestamp.substring(10, 12);
+      const seconds = timestamp.substring(12, 14);
+      
+      // Restituisci la stringa formattata nel formato desiderato
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     }
   }
 };
@@ -312,7 +340,7 @@ export default {
     transform: scale(150%);
     margin: 1rem;
   }
-  
+
   .likes {
     grid-column-start: 3;
     grid-column-end: 4;
@@ -321,6 +349,18 @@ export default {
   }
   
   .likes p svg{
+    transform: scale(150%);
+    margin: 1rem;
+  }
+
+  .time {
+    grid-column-start: 2;
+    grid-column-end: 3;
+    grid-row-start: 4;
+    grid-row-end: 5;
+  }
+  
+  .time p svg{
     transform: scale(150%);
     margin: 1rem;
   }

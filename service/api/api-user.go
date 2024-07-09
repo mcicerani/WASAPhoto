@@ -239,9 +239,9 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 	log.Printf("Profile response: %+v", userProfile)
 }
 
-// getMyStreamHandle ritorna lo stream dell'utente cliccando su tasto stream
+// getMyStream ritorna lo stream dell'utente cliccando su tasto stream
 func (rt *_router) getMyStream(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
-
+	// Estrai il token dall'header Authorization
 	token, err := reqcontext.ExtractBearerToken(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -249,32 +249,62 @@ func (rt *_router) getMyStream(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
+	user, err := reqcontext.AuthenticateUser(token, ctx.Database)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	Photos, err := ctx.Database.GetPhotosStreamByUserID(ps.ByName("userId"))
+	photos, err := ctx.Database.GetPhotosStreamByUserID(strconv.Itoa(user.ID))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	// Costruisci lo stream dell'utente
-	userStream := struct {
-		Photos []database.Photo `json:"Photos"`
-	}{
-		Photos: Photos,
+	// Costruisci una struttura temporanea con le informazioni di likes e comments
+	var userStream struct {
+		Photos []struct {
+			database.Photo
+			Likes    int `json:"likes"`
+			Comments int `json:"comments"`
+		} `json:"Photos"`
 	}
 
+	// Itera su ogni foto per aggiungere le informazioni di likes e comments
+	for _, photo := range photos {
+		photoID := strconv.Itoa(photo.ID)
+
+		likes, err := ctx.Database.CountLikesByPhotoID(photoID)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		comments, err := ctx.Database.CountCommentsByPhotoID(photoID)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// Aggiungi la foto con le informazioni di likes e comments alla struttura temporanea
+		userStream.Photos = append(userStream.Photos, struct {
+			database.Photo
+			Likes    int `json:"likes"`
+			Comments int `json:"comments"`
+		}{
+			Photo:    photo,
+			Likes:    likes,
+			Comments: comments,
+		})
+	}
+
+	// Serializza la risposta in JSON e inviala al client
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(userStream)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-
 }
 
 // followUserHandler segue un utente
