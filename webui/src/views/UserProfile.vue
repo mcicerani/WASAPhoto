@@ -9,8 +9,8 @@
           </RouterLink>
         </p>
         <p v-else class="text-center">
-          <button @click="toggleBan" class="btn btn-danger">{{ isBanned ? 'Unban' : 'Ban' }}</button>
-          <button @click="toggleFollow" class="btn btn-primary">{{ isFollowing ? 'Unfollow' : 'Follow' }}</button>
+          <button @click="toggleBan" class="btn btn-danger" :class="{'banned': isBanned}">{{ isBanned ? 'Unban' : 'Ban' }}</button>
+          <button @click="toggleFollow" class="btn btn-primary" :class="{'followed': isFollowing}">{{ isFollowing ? 'Unfollow' : 'Follow' }}</button>
         </p>
       </div>
     </div>
@@ -447,4 +447,18 @@ export default {
     margin: 1rem;
   }
 
+  .liked{
+    background-color: blue;
+    color: white;
+  }
+
+  .btn-primary.followed {
+    background-color: blue;
+    color: white;
+  }
+
+  .btn-danger.banned{
+    background-color: red;
+    color: white;
+  }
 </style>
