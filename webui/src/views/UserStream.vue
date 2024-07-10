@@ -7,12 +7,12 @@
               <div class="card-body">
                 <img class="text-center" :src="'data:image/jpeg;base64,' + photo.image_data" alt="User Photo">
                 <div class="text-center likes">
-                  <p>
+                  <button @click="toggleLike(photo)" type="button" class="like-button btn btn-primary btn-sm align-self-center" :class="{'liked': photo.isLiked}" data-toggle="button" aria-pressed="false" autocomplete="off">
                     <svg class="feather">
                       <use href="/feather-sprite-v4.29.0.svg#heart"/>
                     </svg>
                     {{ photo.likes }}
-                  </p>
+                  </button>
                 </div>
                 <div class="text-center time">
                   <p>
@@ -77,6 +77,46 @@
         } catch (error) {
           console.error(error);
           // Gestisci l'errore se necessario
+        }
+      },
+      async toggleLike(photo) {
+        const loggedInUserId = localStorage.getItem('loggedInUserId');
+        const token = localStorage.getItem('token');
+
+        try {
+          // Fetch the current list of likes for the photo
+          const likesResponse = await api.get(`/users/${loggedInUserId}/photos/${photo.id}/likes`, {
+            headers: {
+              Authorization: token
+            }
+          });
+
+          const existingLikes = likesResponse.data || [];
+          const existingLike = existingLikes.find(like => like.user_id == loggedInUserId);
+
+          if (existingLike) {
+            // Unlike the photo
+            await api.delete(`/users/${loggedInUserId}/photos/${photo.id}/likes/${existingLike.id}`, {
+              headers: {
+                Authorization: token
+              }
+            });
+            photo.isLiked = false;
+            photo.likes--;
+            console.log('Photo unliked successfully');
+          } else {
+            // Like the photo
+            const response = await api.post(`/users/${loggedInUserId}/photos/${photo.id}/likes`, {}, {
+              headers: {
+                Authorization: token
+              }
+            });
+            photo.isLiked = true;
+            photo.likes++;
+            console.log('Photo liked successfully');
+          }
+        } catch (error) {
+          console.error('Error toggling like:', error);
         }
       },
       formatTimestamp(timestamp) {

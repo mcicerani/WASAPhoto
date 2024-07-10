@@ -46,23 +46,22 @@
               <div class="card-body">
                 <img class="text-center" :src="'data:image/jpeg;base64,' + photo.image_data" alt="User Photo">
                 <div class="text-center likes">
-                  <p>
+                  <button @click="toggleLike(photo)" type="button" class="like-button btn btn-primary btn-sm align-self-center" :class="{'liked': photo.isLiked}" data-toggle="button" aria-pressed="false" autocomplete="off">
                     <svg class="feather">
                       <use href="/feather-sprite-v4.29.0.svg#heart"/>
                     </svg>
                     {{ photo.likes }}
+                  </button>
+                </div>
+                <div class="text-center time align-self-center">
+                  <p>
+                    <svg class="feather">
+                      <use href="/feather-sprite-v4.29.0.svg#clock"/>
+                    </svg>
+                    {{ formatTimestamp(photo.timestamp) }}
                   </p>
                 </div>
-                <div class="text-center time">
-                  <p>
-                      <svg class="feather">
-                          <use href="/feather-sprite-v4.29.0.svg#clock"/>
-                      </svg>
-                      {{ formatTimestamp(photo.timestamp) }}
-                    </p>
-              </div>
-
-                <div class="text-center comments">
+                <div class="text-center comments align-self-center">
                   <p>
                     <svg class="feather">
                       <use href="/feather-sprite-v4.29.0.svg#message-square"/>
@@ -137,17 +136,12 @@ export default {
         });
 
         if (response.data.Photos && response.data.Photos.length > 0) {
-          // Ordina le foto per timestamp in ordine decrescente
           response.data.Photos.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-          
           this.userProfile = response.data;
-
-          // Fetch likes and comments for each photo
           await Promise.all(this.userProfile.Photos.map(photo => this.loadPhotoDetails(photo)));
         } else {
-          // Se non ci sono foto disponibili, gestire di conseguenza
           this.userProfile = response.data;
-          this.userProfile.Photos = []; // Assicurati che Photos sia un array vuoto
+          this.userProfile.Photos = [];
         }
       } catch (error) {
         console.error('Error loading user profile:', error);
@@ -169,30 +163,35 @@ export default {
 
         photo.likes = likesResponse.data ? likesResponse.data.length : 0;
         photo.comments = commentsResponse.data ? commentsResponse.data.length : 0;
+
+        const loggedInUserId = parseInt(localStorage.getItem('loggedInUserId'));
+        photo.isLiked = likesResponse.data.some(like => like.user_id === loggedInUserId);
+        photo.likeId = likesResponse.data.find(like => like.user_id === loggedInUserId)?.id;
       } catch (error) {
         console.error('Error loading photo details:', error);
         photo.likes = 0;
         photo.comments = 0;
+        photo.isLiked = false;
+        photo.likeId = null;
       }
     },
     async deletePhoto(photoId) {
       const userId = this.userProfile.user.id;
 
-        try {
-          const response = await api.delete(`/users/${userId}/photos/${photoId}`, {
-            headers: {
-              Authorization: localStorage.getItem('token')
-            }
-          });
+      try {
+        const response = await api.delete(`/users/${userId}/photos/${photoId}`, {
+          headers: {
+            Authorization: localStorage.getItem('token')
+          }
+        });
 
-          // Rimuovi la foto dall'array userProfile.Photos
-          this.userProfile.Photos = this.userProfile.Photos.filter(photo => photo.id !== photoId);
-          this.userProfile.numPhotos--; // Aggiorna il numero di foto
+        this.userProfile.Photos = this.userProfile.Photos.filter(photo => photo.id !== photoId);
+        this.userProfile.numPhotos--;
 
-          console.log('Photo deleted successfully:', response.data);
-        } catch (error) {
-          console.error('Error deleting photo:', error);
-        }
+        console.log('Photo deleted successfully:', response.data);
+      } catch (error) {
+        console.error('Error deleting photo:', error);
+      }
     },
     async loadFollowAndBanStatus() {
       const userId = this.$route.params.userId;
@@ -266,15 +265,55 @@ export default {
         console.error('Error toggling ban:', error);
       }
     },
+    async toggleLike(photo) {
+      const userId = this.userProfile.user.id;
+      const loggedInUserId = localStorage.getItem('loggedInUserId');
+      const token = localStorage.getItem('token');
+
+      try {
+        // Fetch the current list of likes for the photo
+        const likesResponse = await api.get(`/users/${userId}/photos/${photo.id}/likes`, {
+          headers: {
+            Authorization: token
+          }
+        });
+
+        const existingLikes = likesResponse.data || [];
+        const existingLike = existingLikes.find(like => like.user_id == loggedInUserId);
+
+        if (existingLike) {
+          // Unlike the photo
+          await api.delete(`/users/${userId}/photos/${photo.id}/likes/${existingLike.id}`, {
+            headers: {
+              Authorization: token
+            }
+          });
+          photo.isLiked = false;
+          photo.likes--;
+          console.log('Photo unliked successfully');
+        } else {
+          // Like the photo
+          const response = await api.post(`/users/${userId}/photos/${photo.id}/likes`, {}, {
+            headers: {
+              Authorization: token
+            }
+          });
+          photo.isLiked = true;
+          photo.likes++;
+          console.log('Photo liked successfully');
+        }
+      } catch (error) {
+        console.error('Error toggling like:', error);
+      }
+    },
     addPhotoToProfile(photo) {
-      this.userProfile.Photos.push(photo);
-      this.userProfile.numPhotos++;
+    this.userProfile.Photos.push(photo);
+    this.userProfile.numPhotos++;
     },
     formatTimestamp(timestamp) {
       if (!timestamp || timestamp.length !== 14) {
-        return ''; // Gestione di casi non validi, ad esempio timestamp mancante o formato non corretto
+        return ''; 
       }
-      // Estrai le singole parti del timestamp
       const year = timestamp.substring(0, 4);
       const month = timestamp.substring(4, 6);
       const day = timestamp.substring(6, 8);
@@ -282,12 +321,12 @@ export default {
       const minutes = timestamp.substring(10, 12);
       const seconds = timestamp.substring(12, 14);
       
-      // Restituisci la stringa formattata nel formato desiderato
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     }
   }
 };
 </script>
+
 
 <style>
   h1 {
