@@ -15,7 +15,6 @@ import (
 func (rt *_router) searchUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params, ctx reqcontext.RequestContext) {
 
 	username := r.FormValue("username")
-	var loggedUser = ctx.User
 
 	token, err := reqcontext.ExtractBearerToken(r)
 	if err != nil {
@@ -27,24 +26,6 @@ func (rt *_router) searchUser(w http.ResponseWriter, r *http.Request, _ httprout
 	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	userByUsername, err := ctx.Database.GetUserByUsername(username)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	usernameId := strconv.Itoa(userByUsername.ID)
-
-	isBanned, err := ctx.Database.IsBanned(strconv.Itoa(loggedUser.ID), usernameId)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	if isBanned {
-		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
 

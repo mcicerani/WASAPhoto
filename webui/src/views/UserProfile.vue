@@ -165,8 +165,8 @@ export default {
         photo.comments = commentsResponse.data ? commentsResponse.data.length : 0;
 
         const loggedInUserId = parseInt(localStorage.getItem('loggedInUserId'));
-        photo.isLiked = likesResponse.data.some(like => like.user_id === loggedInUserId);
-        photo.likeId = likesResponse.data.find(like => like.user_id === loggedInUserId)?.id;
+        photo.isLiked = likesResponse.data ? likesResponse.data.some(like => like.user_id === loggedInUserId) : false;
+        photo.likeId = likesResponse.data ? likesResponse.data.find(like => like.user_id === loggedInUserId)?.id : null;
       } catch (error) {
         console.error('Error loading photo details:', error);
         photo.likes = 0;
@@ -175,7 +175,7 @@ export default {
         photo.likeId = null;
       }
     },
-    async deletePhoto(photoId) {
+      async deletePhoto(photoId) {
       const userId = this.userProfile.user.id;
 
       try {
@@ -293,7 +293,7 @@ export default {
           console.log('Photo unliked successfully');
         } else {
           // Like the photo
-          const response = await api.post(`/users/${userId}/photos/${photo.id}/likes`, {}, {
+          await api.post(`/users/${photo.user_id}/photos/${photo.id}/likes`, {}, {
             headers: {
               Authorization: token
             }
@@ -302,6 +302,21 @@ export default {
           photo.likes++;
           console.log('Photo liked successfully');
         }
+
+        // Refetch the likes to update the likeId and isLiked properties
+        const updatedLikesResponse = await api.get(`/users/${photo.user_id}/photos/${photo.id}/likes`, {
+          headers: {
+            Authorization: token
+          }
+        });
+
+        const updatedLikes = updatedLikesResponse.data || [];
+        const updatedLike = updatedLikes.find(like => like.user_id == loggedInUserId);
+
+        // Update photo properties
+        photo.isLiked = !!updatedLike;
+        photo.likeId = updatedLike ? updatedLike.id : null;
+
       } catch (error) {
         console.error('Error toggling like:', error);
       }
