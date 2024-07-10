@@ -158,55 +158,6 @@ func (rt *_router) deletePhoto(w http.ResponseWriter, r *http.Request, ps httpro
 	log.Printf("Photo deleted successfully with photoId: %s\n", photoID)
 }
 
-// getPhotoHandler ottiene i dettagli di una foto dal database
-func (rt *_router) getPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
-	// Ottenere l'ID dell'utente e l'ID della foto dalla richiesta
-	userID := ps.ByName("userId")
-	photoID := ps.ByName("photosId")
-
-	// Verificare che l'ID dell'utente e l'ID della foto siano validi
-	if userID == "" || photoID == "" {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		log.Println("Bad Request: Empty userID or photosID")
-		return
-	}
-
-	token, err := reqcontext.ExtractBearerToken(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		log.Printf("Unauthorized: %v\n", err)
-		return
-	}
-
-	// Autentica l'utente utilizzando il token
-	_, err = reqcontext.AuthenticateUser(token, ctx.Database)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		log.Printf("Unauthorized: %v\n", err)
-		return
-	}
-
-	// Ottenere i dettagli della foto dal database
-	photo, err := ctx.Database.GetPhotoByID(photoID)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		log.Printf("Internal Server Error: %v\n", err)
-		return
-	}
-
-	// Log per indicare il successo nel recupero dei dettagli della foto
-	log.Printf("Photo details fetched successfully: %v\n", photo)
-
-	// Creare la risposta JSON contenente i dettagli della foto
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(photo)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		log.Printf("Error encoding JSON response: %v\n", err)
-		return
-	}
-}
-
 // likePhotoHandler aggiunge un like a una foto nel database
 func (rt *_router) likePhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 

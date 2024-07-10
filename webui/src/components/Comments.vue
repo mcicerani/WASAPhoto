@@ -2,7 +2,7 @@
     <div class="mt-4">
       <!-- Lista commenti -->
       <div v-if="sortedComments.length > 0">
-        <div v-for="(commentResponse, index) in sortedComments" :key="commentResponse.id" class="row mb-2 align-items-start">
+        <div v-for="commentResponse in sortedComments" :key="commentResponse.id" class="row mb-2 align-items-start">
           <div class="col-md-8 align-self-center">
             <p><strong>{{ getUserName(commentResponse.user_id) }}:</strong> {{ commentResponse.text }}</p>
           </div>
