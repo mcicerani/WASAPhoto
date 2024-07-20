@@ -209,8 +209,6 @@ func (rt *_router) getUserProfile(w http.ResponseWriter, r *http.Request, ps htt
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-
-	log.Printf("Profile response: %+v", userProfile)
 }
 
 // getMyStream ritorna lo stream dell'utente cliccando su tasto stream

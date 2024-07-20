@@ -347,6 +347,11 @@ export default {
   h1 {
     text-transform: capitalize;
   }
+  h3{
+    text-transform: capitalize;
+    font-size: medium;
+    font-weight: bold;
+  }
   .btn {
     margin: 1rem;
     background-color: white;

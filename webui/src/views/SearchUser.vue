@@ -1,7 +1,7 @@
 <template>
   <div class="searchform">
+    <img src="/wasaphoto.svg">
     <form @submit.prevent="searchUsers">
-      <h1>Ricerca Utenti</h1>
       <input type="text" v-model="search" placeholder="Cerca utenti" required>
       <button type="submit">Cerca</button>
     </form>
@@ -79,5 +79,9 @@ export default {
   align-items: center;
   justify-content: center;
   height: 90vh;
+}
+.searchform img{
+  width: 300px;
+  padding: 1rem;
 }
 </style>

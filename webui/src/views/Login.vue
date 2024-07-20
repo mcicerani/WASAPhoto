@@ -42,7 +42,7 @@ export default {
 
 <template>
   <div class="loginform">
-    <h1>Login</h1>
+    <img src="/wasaphoto.svg">
     <form @submit.prevent="dologin">
       <div>
         <input type="text" id="username" placeholder="Username" v-model="username">
@@ -78,5 +78,10 @@ form button {
   font-size: 1rem;
   cursor: pointer;
   border-radius: 10px;
+}
+
+.loginform img{
+  width: 300px;
+  padding: 1rem;
 }
 </style>

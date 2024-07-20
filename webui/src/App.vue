@@ -58,11 +58,10 @@ onMounted(() => {
 
 <template>
   <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-    <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="#/">WASAPhoto</a>
+    <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6 text-center" href="#/"> <img src="/wasaphoto-white.png"></a>
     <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
-    <button v-if="isLoggedIn" class="logout" @click="logout">Logout</button>
   </header>
 
   <div class="container-fluid">
@@ -96,6 +95,7 @@ onMounted(() => {
             </li>
           </ul>
         </div>
+        <button v-if="isLoggedIn" class="logout btn btn-danger text-center" @click="logout">Logout</button>
       </nav>
 
       <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
@@ -106,5 +106,19 @@ onMounted(() => {
 </template>
 
 <style>
-/* Add your custom styles here */
+  .navbar-brand img{
+    width: 50px;
+  }
+  .logout {
+    position: fixed;
+    bottom: 0;
+    width: 5rem;
+  }
+  .btn-danger:hover {
+    background-color: red;
+    color: white;
+  }
+  .nav-item{
+    margin-top: 1rem;
+  }
 </style>

@@ -1,6 +1,6 @@
 <template>
   <div className="usernameForm">
-    <h1>Cambia Username</h1>
+    <img src="/wasaphoto.svg">
     <form @submit.prevent="changeUsername">
       <div>
         <label for="newUsername">Nuovo Username:</label>
@@ -78,7 +78,10 @@ export default {
   justify-content: center;
   height: 90vh;
 }
-
+.usernameForm img{
+  width: 300px;
+  padding: 1rem;
+}
 form {
   margin-top: 1rem;
   display: flex;
